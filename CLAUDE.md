@@ -28,31 +28,53 @@ order like paint: each layer carves its volume out of every earlier layer of ano
 color. So: put the black backing first, then body paint, then inlays and trim.
 A `car.py` must define `spec()` returning this dict; build it with helpers from `keychain/parts.py`.
 
-## House style (measured from the Mercedes)
+## House style
 
-- Size: about 70 x 25 mm including the keyring tab; the car face itself about 63 x 25.
-- Filaments: black, white (body and headlight lenses), silver "chrome", orange (indicators,
-  lit lamps). Inventor colors: black 0.02, white 0.961, chrome 0.957, orange (0.867, 0.486, 0.059).
-- Heights from the bed (z):
-  - 0 to 1.5: black backing plate under the whole silhouette.
-  - 1.5 to 3.0: white body sits on the backing; 3.0 is the main face of the keychain
-    (hood lip up to 3.2, lower-apron vent strips 2.8).
-  - Pockets 0.5 deep (floor 2.5) hold lights and headlight bezels, finishing flush at 3.0.
-  - Chrome trim stands 0.5 proud: grille surround 3.0 to 3.5; grille bars 2.7 to 3.2.
-  - Bumper strip (black) is the highest part at 3.7; the plate bracket (chrome) reaches 3.7.
-  - Black shows through slots cut in the white body for vents.
-  - Grille openings are through-holes (see-through).
-- Keyring tab: black, on the left, full 3.0 thick, Ø4 hole, R4 rounded end, R3.5 fillets
-  where it meets the body; hole center about 4 mm outside the body edge, at mid height of the bumper line.
+Measured from six of the owner's STEP files in `reference/` (Mercedes W124, Toyota Prius
+2018, Hyundai Ioniq 2019, Hyundai Starex van, Hyundai Ioniq 6 2023, Mercedes SL), each
+with its reference photo next to it. The Ioniq 6 and SL use Slovak part names (spodok =
+bottom, vrch = top) and slightly different habits; the SL export is broken (its black base
+came out as an empty sliver), so it is only partly usable.
+
+- Size: always about 70 mm wide including the keyring tab (69.5 to 70.5); height follows the
+  car, 24 to 31 mm. The car face itself is about 62 to 63 mm wide.
+- Thickness: 3.0 to 3.4 mm main face; the most proud features reach 3.6 to 3.9.
+- Construction, the same on every car:
+  - A black "Parts" body: backing plate 0 to 1.5 under the whole silhouette, plus the
+    keyring tab, and black raised wherever the car is black (grilles, bumper strips,
+    headlight housings, vents). Black detail tops sit at 2.0 to 3.0.
+  - The body-color part sits on the backing from 1.5 and has stepped tops at 0.2 mm
+    increments: 2.5, 2.8, 3.0, 3.2, 3.4 (hood lips, bumper creases, fenders).
+  - Other colors are separate parts that either stand on the backing (bottom 1.5) or sit in
+    pockets, 0.5 to 1.0 deep, mostly finishing flush with the surrounding surface;
+    trim and logos may stand 0.2 to 0.5 proud.
+  - Small dark openings are often see-through holes through the whole keychain: grille
+    cells (W124), round headlight "eyes" about 3 mm (Prius, Ioniq), LED slots 2.5 x 1.2
+    (Ioniq 6), lower-grille slits about 0.7 to 1.1 mm wide (Prius).
+- Filaments: black is always the base. Body color is whatever the car is (white, silver,
+  or left as Inventor default grey on some models). Accents: white for lamps and LED
+  dots, "chrome" (light silver/white), dark grey for grille surrounds and lower bumpers,
+  orange for indicators, gold/yellow for chrome lips or fog lamps. 3 to 6 colors per car.
+  Inventor RGB: black 0.02, white 0.961, chrome 0.957, dark grey 0.271, silver 0.6,
+  orange (0.867, 0.486, 0.059) or (0.812, 0.31, 0), gold (0.886, 0.863, 0.165).
+- Keyring tab: black, on the left, Ø4.0 hole on every car, R4 rounded end, R3.5 fillets
+  where it meets the body, same height as the main face (3.0; 3.4 on the Ioniq). Hole
+  center about 3 to 3.6 mm outside the body edge, at 50 to 56% of the car's height,
+  where the side of the car is straight.
+- Simplification: headlights become black housings with colored inlays and see-through
+  eyes; grilles become black recesses with chrome or body-color bars or a mesh; bull bars
+  and bumpers are the tallest parts. Logos are sometimes modeled (Ioniq 6 grey H, W124 none,
+  Prius a plain black oval badge), so ask the owner per car.
 - The license plate is not modeled: the owner adds it from a Bambu Studio template.
-- Smallest features in the original: about 0.4 mm slots and 0.5 mm wide trim lines.
+- Smallest features: about 0.4 mm slots and 0.5 mm wide trim lines.
 
 ## Making a new car
 
 1. Get a straight-on front photo (or SVG/DXF outlines) from the owner. Do not invent
    a car's face from memory; ask for a reference.
 2. Write `cars/<car>/car.py`: silhouette and keyring tab, then body, pockets, inlays and
-   trim, following the heights above. Scale the car to about 63 mm wide.
+   trim, following the house style above. Scale it so the keychain is about 70 mm wide
+   including the tab. `cars/` has five rebuilt examples to copy patterns from.
 3. Run `python tools/build.py cars/<car>/car.py`, look at `out/preview.png`, compare it
    with the photo and iterate.
 4. Leave real brand logos as a plain badge area unless the owner asks otherwise.
