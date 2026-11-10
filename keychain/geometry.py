@@ -47,8 +47,18 @@ def _region(outline, holes, z0, z1):
     def wire(points):
         return cq.Wire.makePolygon([cq.Vector(x, y, z0) for x, y in simplify(points)], close=True)
 
+    height = cq.Vector(0, 0, z1 - z0)
     face = cq.Face.makeFromWires(wire(outline), [wire(h) for h in holes or []])
-    return cq.Solid.extrudeLinear(face, cq.Vector(0, 0, z1 - z0))
+    solid = cq.Solid.extrudeLinear(face, height)
+    if solid.isValid():
+        return solid
+    # Holes that touch the outline or each other make an invalid face; cut them
+    # out one at a time instead.
+    solid = cq.Solid.extrudeLinear(cq.Face.makeFromWires(wire(outline)), height)
+    for h in holes or []:
+        cutter = cq.Solid.extrudeLinear(cq.Face.makeFromWires(wire(h)), height)
+        solid = _bool("cut", solid, cutter, FUZZY_TRIES[0])
+    return solid
 
 
 # Neighbouring parts traced separately never line up to the last micron, so
@@ -73,7 +83,20 @@ def _bool(op, a, b, fuzzy):
     algo.Build()
     if not algo.IsDone():
         raise RuntimeError(f"{op} failed")
-    return cq.Shape.cast(algo.Shape())
+    result = cq.Shape.cast(algo.Shape())
+    # OpenCascade sometimes "succeeds" and silently drops material, so check
+    # the result's volume against what the operation can possibly produce.
+    va = a.Volume()
+    vt = [t.Volume() for t in (b if isinstance(b, list) else [b])]
+    vr = result.Volume()
+    slack = 1e-3 * (va + sum(vt)) + 1e-3
+    if op == "fuse":
+        ok = max([va] + vt) - slack <= vr <= va + sum(vt) + slack
+    else:
+        ok = max(0.0, va - sum(vt)) - slack <= vr <= va + slack
+    if not ok:
+        raise RuntimeError(f"{op} lost material ({vr:.1f} mm3 from {va:.1f} and {sum(vt):.1f})")
+    return result
 
 
 def layer_solid(layer, fuzzy=FUZZY_TRIES[0]):
@@ -96,8 +119,7 @@ def build(spec):
         except RuntimeError as e:
             problems.append(f"fuzzy={fuzzy}: {e}")
             continue
-        bad = [c for c in limits
-               if c not in bodies or not bodies[c].isValid() or not 0 < bodies[c].Volume() <= limits[c] * 1.001]
+        bad = [c for c in limits if c not in bodies or not 0 < bodies[c].Volume() <= limits[c] * 1.001]
         if not bad:
             return bodies
         problems.append(f"fuzzy={fuzzy}: bad bodies {bad}")

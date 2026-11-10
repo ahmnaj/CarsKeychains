@@ -14,7 +14,7 @@ import sys
 
 import cadquery as cq
 from OCP.BRepTools import BRepTools_WireExplorer
-from OCP.Quantity import Quantity_Color
+from OCP.Quantity import Quantity_Color, Quantity_TOC_sRGB
 from OCP.STEPCAFControl import STEPCAFControl_Reader
 from OCP.TCollection import TCollection_ExtendedString
 from OCP.TDataStd import TDataStd_Name
@@ -22,6 +22,12 @@ from OCP.TDF import TDF_Label, TDF_LabelSequence
 from OCP.TDocStd import TDocStd_Document
 from OCP.TopLoc import TopLoc_Location
 from OCP.XCAFDoc import XCAFDoc_ColorType, XCAFDoc_DocumentTool
+
+
+def srgb(color):
+    """OpenCascade hands colors back as linear RGB; files and slicers use sRGB."""
+    r, g, b = color.Values(Quantity_TOC_sRGB)
+    return (r, g, b)
 
 
 def read_parts(path):
@@ -44,14 +50,14 @@ def read_parts(path):
         c = Quantity_Color()
         for t in (XCAFDoc_ColorType.XCAFDoc_ColorSurf, XCAFDoc_ColorType.XCAFDoc_ColorGen):
             if colors.GetColor_s(label, t, c):
-                return (c.Red(), c.Green(), c.Blue())
+                return srgb(c)
         return None
 
     def shape_color(shape):
         c = Quantity_Color()
         for t in (XCAFDoc_ColorType.XCAFDoc_ColorSurf, XCAFDoc_ColorType.XCAFDoc_ColorGen):
             if colors.GetColor(shape, t, c):
-                return (c.Red(), c.Green(), c.Blue())
+                return srgb(c)
         return None
 
     out = []
