@@ -33,8 +33,9 @@ A `car.py` must define `spec()` returning this dict; build it with helpers from 
 Measured from six of the owner's STEP files in `reference/` (Mercedes W124, Toyota Prius
 2018, Hyundai Ioniq 2019, Hyundai Starex van, Hyundai Ioniq 6 2023, Mercedes SL), each
 with its reference photo next to it. The Ioniq 6 and SL use Slovak part names (spodok =
-bottom, vrch = top) and slightly different habits; the SL export is broken (its black base
-came out as an empty sliver), so it is only partly usable.
+bottom, vrch = top). The SL's STEP export is broken (its black base came out as an empty
+sliver) and is an older, thinner version; use `reference/Mercedes_SL380.stl` instead, which
+is complete and follows the same rules (base 1.5, parts from 1.5, bumper 3.6, Ø4 hole).
 
 - Size: always about 70 mm wide including the keyring tab (69.5 to 70.5); height follows the
   car, 24 to 31 mm. The car face itself is about 62 to 63 mm wide.
@@ -51,10 +52,15 @@ came out as an empty sliver), so it is only partly usable.
   - Small dark openings are often see-through holes through the whole keychain: grille
     cells (W124), round headlight "eyes" about 3 mm (Prius, Ioniq), LED slots 2.5 x 1.2
     (Ioniq 6), lower-grille slits about 0.7 to 1.1 mm wide (Prius).
-- Filaments: black is always the base. Body color is whatever the car is (white, silver,
-  or left as Inventor default grey on some models). Accents: white for lamps and LED
-  dots, "chrome" (light silver/white), dark grey for grille surrounds and lower bumpers,
+- Filaments: black is always the base. Body color is whatever the car is: white, silver,
+  or grey (Inventor's default grey 0.749 means it is printed in grey filament). Accents:
+  white for lamps and LED dots, silver for "chrome" trim (white 0.961 and chrome 0.957 are
+  different filaments: white and silver), dark grey for grille surrounds and lower bumpers,
   orange for indicators, gold/yellow for chrome lips or fog lamps. 3 to 6 colors per car.
+- The owner has one AMS (4 slots). With more than 4 colors, the extra colors are printed
+  separately and glued in afterwards, so design normally: each color stays its own part
+  and nothing about the construction changes. Mention in the hand-over which colors would
+  be glue-ins (the least-used ones).
   Inventor RGB: black 0.02, white 0.961, chrome 0.957, dark grey 0.271, silver 0.6,
   orange (0.867, 0.486, 0.059) or (0.812, 0.31, 0), gold (0.886, 0.863, 0.165).
 - Keyring tab: black, on the left, Ø4.0 hole on every car, R4 rounded end, R3.5 fillets
@@ -63,8 +69,11 @@ came out as an empty sliver), so it is only partly usable.
   where the side of the car is straight.
 - Simplification: headlights become black housings with colored inlays and see-through
   eyes; grilles become black recesses with chrome or body-color bars or a mesh; bull bars
-  and bumpers are the tallest parts. Logos are sometimes modeled (Ioniq 6 grey H, W124 none,
-  Prius a plain black oval badge), so ask the owner per car.
+  and bumpers are the tallest parts.
+- Logos: never model them on new cars. Leave a blank badge where the logo goes, shaped like
+  the real badge outline, in black, 0.3 mm below the surrounding surface so the owner can
+  glue a logo into it (Prius: 6.0 x 4.3 mm oval, top at 2.7 in a 3.0 face). The older
+  models with modeled logos (Ioniq 6, SL) are not the pattern to follow.
 - The license plate is not modeled: the owner adds it from a Bambu Studio template.
 - Smallest features: about 0.4 mm slots and 0.5 mm wide trim lines.
 
@@ -77,7 +86,7 @@ came out as an empty sliver), so it is only partly usable.
    including the tab. `cars/` has five rebuilt examples to copy patterns from.
 3. Run `python tools/build.py cars/<car>/car.py`, look at `out/preview.png`, compare it
    with the photo and iterate.
-4. Leave real brand logos as a plain badge area unless the owner asks otherwise.
+4. Leave the logo as a blank badge (see House style).
 5. Commit the car folder including `out/` so the owner can download the files from GitHub.
 
 ## Printing

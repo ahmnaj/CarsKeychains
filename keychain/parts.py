@@ -12,6 +12,7 @@ POCKET_FLOOR = 2.5   # floor under lights/bezels inlays (0.5 deep pockets)
 SURFACE = 3.0        # main face of the keychain; inlays finish flush here
 TRIM_TOP = 3.5       # chrome trim raised 0.5 above the surface
 BUMPER_TOP = 3.7     # most proud feature (bumper strip / plate bracket)
+BADGE_RECESS = 0.3   # blank logo badge sits this far below the surface around it
 
 # Keyring tab (from the Mercedes): Ø4 hole, R4 rounded end, R3.5 neck fillets
 RING_HOLE_R = 2.0
