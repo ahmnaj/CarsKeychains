@@ -77,11 +77,12 @@ CHIN_BOTTOM = [(318, 386.5), (290, 384.5), (250, 383), (200, 384), (180, 387.3),
 
 # panel lines, located on the darkest pixels of the photo's seams; 0.40 mm grooves
 GROOVE_W = 3.5
-LINES = {
-    "hood shut line": [(148.5, 218.3)] + SHUT_LINE,
-    "hood-fender line": [(76.5, 171), (74.5, 173.5), (73.7, 179), (73.2, 186.6)],
-    "fender line": [(74, 174), (70, 175.6), (66, 177.3), (64.5, 178)],
-    "fender-bumper seam": [(46.5, 231.6), (51, 228.5), (56, 225.8), (60, 224), (64.5, 222.8)],
+LINES = {   # each runs through to the silhouette edge or into the headlight housing
+    "hood shut line": [(145.5, 219.5)] + SHUT_LINE,
+    "hood-fender line": [(79.5, 163), (76.5, 171), (74.5, 173.5), (73.7, 179), (73.2, 188.5)],
+    "fender line": [(74, 174), (70, 175.6), (66, 177.3), (64.5, 178), (59, 180.5)],
+    "fender-bumper seam": [(41, 235), (46.5, 231.6), (51, 228.5), (56, 225.8), (60, 224),
+                           (64.5, 222.8), (67.5, 222.3)],
 }
 # lit panel between fog vent and grille: a fold in the bumper, 0.2 mm below the surface
 LIT_PANEL = [(99, 285.5), (110, 287.5), (125, 290), (137.5, 292.5)] + CREASE[1:] + \
@@ -99,6 +100,45 @@ def stroke(pts, w=GROOVE_W):
         left.append((x + nx, y + ny))
         right.append((x - nx, y - ny))
     return left + right[::-1]
+
+
+def inside(p, poly):
+    x, y, hit = p[0], p[1], False
+    for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]):
+        if (y0 > y) != (y1 > y) and x < x0 + (y - y0) * (x1 - x0) / (y1 - y0):
+            hit = not hit
+    return hit
+
+
+def clip_half(poly, a, b, keep):
+    """Keep the part of poly on the same side of line a-b as point keep."""
+    side = lambda p: (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+    sk = side(keep)
+    out = []
+    for p, q in zip(poly, poly[1:] + poly[:1]):
+        sp, sq = side(p) * sk, side(q) * sk
+        if sp >= 0:
+            out.append(p)
+        if (sp >= 0) != (sq >= 0):
+            t = sp / (sp - sq)
+            out.append((p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])))
+    return out
+
+
+def groove(line, outline_px):
+    """Groove polygon along a px polyline, trimmed flush where it runs off the silhouette."""
+    poly = stroke(line)
+    for end, nxt in ((line[0], line[1]), (line[-1], line[-2])):
+        if inside(end, outline_px):
+            continue
+        # outline segment crossed between the last inside point and the end
+        for a, b in zip(outline_px, outline_px[1:] + outline_px[:1]):
+            d = lambda p: (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+            e = lambda p: (end[0] - nxt[0]) * (p[1] - nxt[1]) - (end[1] - nxt[1]) * (p[0] - nxt[0])
+            if d(end) * d(nxt) < 0 and e(a) * e(b) <= 0:
+                poly = clip_half(poly, a, b, nxt)
+                break
+    return poly
 
 
 def ring_tab(side_x, hy, offset=3.6):
@@ -155,22 +195,27 @@ def spec():
     badge = mm([(318 + 24.5 * math.cos(2 * math.pi * i / 64), 247 + 15 * math.sin(2 * math.pi * i / 64))
                 for i in range(64)])                # 5.6 x 3.4 mm oval
 
-    grooves = {}
+    # panel lines: black floor at 2.5 plus a void above it, so every blue layer is cut
+    # clean through and the body splits into separate pieces along each line
+    outline_px = SILHOUETTE + flip(SILHOUETTE)[1:-1]
+    # (the floor is trimmed flush with the silhouette; the gap may overrun it)
+    grooves, gaps = [], []
     for name, line in LINES.items():
-        if line[-1][0] == CX:   # runs to the centre: make it one line across
-            grooves[name] = [mm(stroke(line + flip(line)[1:]))]
+        if line[-1][0] == CX:   # runs to the centre: one line across the car
+            lines = [(name, line + flip(line)[1:])]
         else:
-            grooves[name] = list(pair(stroke(line)))
-    hood_lines = grooves["hood-fender line"] + grooves["fender line"]
-    all_lines = [g for gs in grooves.values() for g in gs]
+            lines = [(name + " L", line), (name + " R", flip(line)[::-1])]
+        for n, ln in lines:
+            grooves.append((n, mm(groove(ln, outline_px))))
+            gaps.append((n, mm(stroke(ln))))
 
     lit_l, lit_r = pair(LIT_PANEL)
-    pockets = [lit_l, lit_r, hl_l, hl_r, fog_l, fog_r, grille, badge, slot_l, slot_r, intake] + all_lines
+    pockets = [lit_l, lit_r, hl_l, hl_r, fog_l, fog_r, grille, badge, slot_l, slot_r, intake]
     layers = [
         layer("Backing", "black", 0, BASE_TOP, outline, holes=[eye_l, eye_r]),
         layer("Keyring tab", "black", 0, SURFACE, tab, holes=[tab_hole]),
         layer("Body", "body_blue", BASE_TOP, SURFACE, outline, holes=pockets),
-        layer("Hood", "body_blue", BASE_TOP, 3.2, hood, holes=hood_lines),
+        layer("Hood", "body_blue", BASE_TOP, 3.2, hood),
         layer("Bumper lip over grille", "body_blue", BASE_TOP, 3.2, lip),
         layer("Chin", "body_blue", BASE_TOP, 3.4, chin),
         layer("Lit panel L", "body_blue", BASE_TOP, 2.8, lit_l),
@@ -184,7 +229,7 @@ def spec():
         layer("Lower corner slot L", "black", 0, 2.0, slot_l),
         layer("Lower corner slot R", "black", 0, 2.0, slot_r),
         layer("Lower intake", "black", 0, 2.0, intake),
-        *[layer(f"Panel line: {n}", "black", 0, 2.5, g) for n, gs in grooves.items() for g in gs],
+        *[layer(f"Panel line {n}", "black", 0, 2.5, g) for n, g in grooves],
         layer("Blank logo badge", "black", 0, SURFACE - BADGE_RECESS, badge),
         layer("Projector ring L", "white", 2.5, SURFACE, ring_l, holes=[eye_l]),
         layer("Projector ring R", "white", 2.5, SURFACE, ring_r, holes=[eye_r]),
@@ -192,6 +237,7 @@ def spec():
         layer("Reflector R", "white", 2.5, SURFACE, refl_r),
         layer("Indicator L", "orange", 2.5, SURFACE, amber_l),
         layer("Indicator R", "orange", 2.5, SURFACE, amber_r),
+        *[layer(f"Panel line {n} (gap)", "void", 2.5, 4.0, g) for n, g in gaps],
     ]
     colors = {"black": [0.02, 0.02, 0.02], "body_blue": [0.2, 0.36, 0.55],
               "white": [0.961, 0.961, 0.961], "orange": [0.867, 0.486, 0.059]}

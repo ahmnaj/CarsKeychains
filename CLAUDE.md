@@ -26,6 +26,8 @@ pip install -r requirements.txt   # CadQuery; takes ~10 min on a fresh cloud mac
 Units mm, front view: +X right, +Y up, Z up from the print bed. Layers are applied in
 order like paint: each layer carves its volume out of every earlier layer of another
 color. So: put the black backing first, then body paint, then inlays and trim.
+A layer with color `"void"` is empty space: it carves every earlier layer of any color
+and adds no part (use it for grooves and openings that must cut through stacked layers).
 A `car.py` must define `spec()` returning this dict; build it with helpers from `keychain/parts.py`.
 
 ## House style

@@ -106,11 +106,17 @@ def layer_solid(layer, fuzzy=FUZZY_TRIES[0]):
     return parts[0] if len(parts) == 1 else _bool("fuse", parts[0], parts[1:], fuzzy)
 
 
+# Layer color that means "empty space": it carves every earlier layer and adds no part.
+VOID = "void"
+
+
 def build(spec):
     """Return {color_name: cq.Shape} with non-overlapping bodies."""
     # Upper bound per color: what it would be if nothing carved into it.
     limits = {}
     for layer in spec["layers"]:
+        if layer["color"] == VOID:
+            continue
         limits[layer["color"]] = limits.get(layer["color"], 0.0) + layer_solid(layer).Volume()
     problems = []
     for fuzzy in FUZZY_TRIES:
@@ -143,6 +149,8 @@ def _build(spec, fuzzy):
         for other in list(bodies):
             if other != color:
                 bodies[other] = _bool("cut", bodies[other], new, fuzzy)
+        if color == VOID:  # empty space: removes material from every color, adds nothing
+            continue
         bodies[color] = _bool("fuse", bodies[color], new, fuzzy) if color in bodies else new
     return {c: b.clean() for c, b in bodies.items()}
 
