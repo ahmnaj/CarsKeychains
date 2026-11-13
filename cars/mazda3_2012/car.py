@@ -65,7 +65,7 @@ HL_REST = [(157, 228), (167, 240), (173, 250), (178, 260), (172, 260), (163, 255
 EYE = (107.5, 221.0)
 
 # hood shut line from the headlight to the middle
-SHUT_LINE = [(160, 215.5), (190, 213), (230, 212), (318, 211)]
+SHUT_LINE = [(151, 218), (170, 217), (200, 216), (235, 215), (270, 214), (318, 213)]
 
 # bumper: the crease between the lit panel beside the fog vent and the grille
 CREASE = [(137, 288), (141, 298), (145, 307), (152, 325), (161, 340), (170, 352)]
@@ -75,16 +75,20 @@ GRILLE_BOTTOM = [(182, 363), (195, 366), (220, 370), (245, 372.5), (270, 375), (
 CHIN_BOTTOM = [(318, 386.5), (290, 384.5), (250, 383), (200, 384), (180, 387.3), (160, 387),
                (137, 385), (130, 384), (80, 377.5), (64, 375.5), (58, 371)]
 
-# panel lines, drawn as 0.45 mm grooves (px polylines)
+# panel lines, located on the darkest pixels of the photo's seams; 0.40 mm grooves
+GROOVE_W = 3.5
 LINES = {
-    "hood shut line": [(149, 217.5), (160, 215.5), (190, 213), (230, 212), (318, 211)],
-    "hood-fender line": [(65, 183.5), (67.5, 180), (71.5, 176), (75, 172.5)],
-    "fender-bumper seam": [(48.5, 234), (52, 230.5), (57, 228.5), (65, 228.5)],
-    "crease over fog panel": [(98, 285), (118, 292), (140, 299.5)],
+    "hood shut line": [(148.5, 218.3)] + SHUT_LINE,
+    "hood-fender line": [(76.5, 171), (74.5, 173.5), (73.7, 179), (73.2, 186.6)],
+    "fender line": [(74, 174), (70, 175.6), (66, 177.3), (64.5, 178)],
+    "fender-bumper seam": [(46.5, 231.6), (51, 228.5), (56, 225.8), (60, 224), (64.5, 222.8)],
 }
+# lit panel between fog vent and grille: a fold in the bumper, 0.2 mm below the surface
+LIT_PANEL = [(99, 285.5), (110, 287.5), (125, 290), (137.5, 292.5)] + CREASE[1:] + \
+            [(172, 360), (150, 357), (112, 353), (109, 345), (107, 320), (104, 296)]
 
 
-def stroke(pts, w=4.0):
+def stroke(pts, w=GROOVE_W):
     """Polyline -> thin polygon of width w (px), ends square."""
     left, right = [], []
     for i, (x, y) in enumerate(pts):
@@ -118,7 +122,7 @@ def spec():
     tab, tab_hole = ring_tab((42.5 - CX) * S, 0.53 * (BOT - top) * S)
 
     # hood stops at the upper edge of the shut-line groove
-    hood = sym(SILHOUETTE[-1:-8:-1] + [(58.5, 186)] + HL_TOP + [(x, y - 2.2) for x, y in SHUT_LINE])
+    hood = sym(SILHOUETTE[-1:-8:-1] + [(58.5, 186)] + HL_TOP + [(x, y - GROOVE_W / 2) for x, y in SHUT_LINE])
 
     hl_px = HL_TOP + HL_REST
     hl_l, hl_r = pair(hl_px)
@@ -157,10 +161,11 @@ def spec():
             grooves[name] = [mm(stroke(line + flip(line)[1:]))]
         else:
             grooves[name] = list(pair(stroke(line)))
-    hood_lines = grooves["hood-fender line"]
+    hood_lines = grooves["hood-fender line"] + grooves["fender line"]
     all_lines = [g for gs in grooves.values() for g in gs]
 
-    pockets = [hl_l, hl_r, fog_l, fog_r, grille, badge, slot_l, slot_r, intake] + all_lines
+    lit_l, lit_r = pair(LIT_PANEL)
+    pockets = [lit_l, lit_r, hl_l, hl_r, fog_l, fog_r, grille, badge, slot_l, slot_r, intake] + all_lines
     layers = [
         layer("Backing", "black", 0, BASE_TOP, outline, holes=[eye_l, eye_r]),
         layer("Keyring tab", "black", 0, SURFACE, tab, holes=[tab_hole]),
@@ -168,6 +173,8 @@ def spec():
         layer("Hood", "body_blue", BASE_TOP, 3.2, hood, holes=hood_lines),
         layer("Bumper lip over grille", "body_blue", BASE_TOP, 3.2, lip),
         layer("Chin", "body_blue", BASE_TOP, 3.4, chin),
+        layer("Lit panel L", "body_blue", BASE_TOP, 2.8, lit_l),
+        layer("Lit panel R", "body_blue", BASE_TOP, 2.8, lit_r),
         layer("Headlight housing L", "black", 0, 2.5, hl_l, holes=[eye_l]),
         layer("Headlight housing R", "black", 0, 2.5, hl_r, holes=[eye_r]),
         layer("Fog vent L", "black", 0, 2.0, fog_l),
