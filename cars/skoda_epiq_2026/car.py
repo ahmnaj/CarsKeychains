@@ -265,15 +265,12 @@ FENDER_BUMPER = [(211, 863), (207, 868), (200, 879), (190, 891.7), (180, 905), (
 CREASE = [(146, 1278.5), (160, 1283.5), (173.7, 1288.7), (190, 1295), (210, 1299), (230, 1303),
           (250, 1306), (270, 1310), (290, 1312.5), (310, 1315), (330, 1318), (370, 1323),
           (410, 1326), (450, 1327.5), (490, 1328.2), (570, 1329), (650, 1329.5), (CX, 1330)]
-# seam between the bumper and its lower lip: from the air curtain to the tip of the grille
-# frame; from there on it is the lower edge of the grille
-LIP_SEAM = [(211, 1248), (215, 1254), (222, 1258), (228, 1260), (234, 1262), (240, 1264.5),
-            (246, 1267), (252, 1268.5), (262, 1269), (270, 1270), (280, 1272), (291.5, 1273.5),
-            (302, 1272.5), (314, 1269.5)]
 FRAME_JOINT = [(500, 1128), (500, 1188)]          # joint in the grille frame
 LAMP_SEAM = [(451, 935), (420, 964)]                  # light strip unit to gloss panel
 # creases: sharp folds in the bodywork that read as lines on the car (the owner wants these
-# as grooves too). Each is measured on both sides of the car, which agree within 1 to 2 px.
+# as grooves too). Not the bumper corner edge beside the headlight or the edge from the air
+# curtain to the grille frame: those are hard edges of one part, shown as 0.2 mm steps (the
+# side and lower-lip folds below). Each is measured on both sides of the car, which agree within 1 to 2 px.
 HOOD_CREASE = [(670, 808), (675.3, 824), (679, 834), (681.5, 842), (683.5, 850), (687, 858),
                (689, 866), (691, 874), (694, 882), (696.5, 890), (699, 898), (701.5, 906),
                (704.5, 916), (706, 921.5)]                # edge of the raised hood centre
@@ -281,8 +278,6 @@ UNDER_STRIP = [(204, 916.5), (215, 920), (230, 924), (245, 928.5), (260, 931.5),
                (290, 940.5), (305, 943.5), (320, 947.5), (335, 953.5), (350, 959.5), (365, 965),
                (380, 971), (395, 976.5), (410, 982), (425, 987.5), (440, 993.5), (452, 996),
                (466, 996.5), (482, 995)]                                # under the light strip, Tech-Deck end to end
-CORNER_EDGE = [(203.5, 909), (202, 922), (201, 940), (201, 984), (200, 992), (198.5, 1030),
-               (198, 1064)]                               # bumper corner: Tech-Deck end to air curtain
 BAR_CREASE = [(418, 1027), (427, 1025), (450, 1023), (480, 1024.5), (510, 1028.5), (540, 1030), (600, 1030),
               (700, 1031), (CX, 1032.5)]                  # from headlight tip to headlight tip
 # raised centre of the hood (a fold, 0.2 mm step)
@@ -291,10 +286,10 @@ DOME_EDGE = [(675.3, TOP)] + HOOD_CREASE[2:-1]
 # (line, depth of its floor, runs across the centre)
 LINES = {"hood shut line": (SHUT, 2.5, True), 
          "fender-bumper seam": (FENDER_BUMPER, 2.5, False), "lower bumper crease": (CREASE, 2.5, True),
-         "bumper-lip seam": (LIP_SEAM, 2.5, False), "grille frame joint": (FRAME_JOINT, 2.5, False),
+         "grille frame joint": (FRAME_JOINT, 2.5, False),
          "light strip seam": (LAMP_SEAM, 2.0, False),
          "hood centre crease": (HOOD_CREASE, 2.5, False), "crease under light strip": (UNDER_STRIP, 2.5, False),
-         "bumper corner edge": (CORNER_EDGE, 2.5, False), "bumper bar crease": (BAR_CREASE, 2.5, True)}
+         "bumper bar crease": (BAR_CREASE, 2.5, True)}
 
 # Tech-Deck face: gloss black panel under the hood carrying the light strips
 TD_END = [(208.5, 871), (207, 884), (204.5, 898), (203.5, 910), (205, 916), (208.5, 918.5)]
@@ -325,8 +320,9 @@ AIR_CURTAIN = [(197, 1058), (223, 1058), (222, 1200), (220, 1240), (215, 1252), 
                (203, 1240), (198, 1200), (196, 1100)]
 
 # black band between the headlights; its ends run down diagonally round the grille frame
-BAND_TOP = [(CX, 1059), (600, 1059.3), (500, 1059.7), (460, 1061), (436, 1061.5)]
-BAND_END = [(424, 1067), (418, 1078), (409, 1090), (390, 1101), (369, 1110), (352, 1125),
+BAND_TOP = [(CX, 1059), (600, 1059.3), (500, 1059.7), (460, 1060.5), (446, 1060.5)]
+BAND_END = [(438.5, 1062), (430.5, 1066), (423.5, 1071), (418, 1076), (410.5, 1081), (396, 1090),
+            (381, 1100), (369, 1110), (352, 1125),
             (336, 1140), (316, 1160), (296, 1180), (277, 1200), (262, 1220), (253, 1240),
             (249, 1253), (253, 1263)]
 ARC1 = [(261, 1268), (267, 1256), (282, 1240), (298, 1220), (320, 1200), (342, 1180), (366, 1160),
@@ -340,6 +336,7 @@ GRILLE_BOTTOM = [(300, 1275), (330, 1280), (350, 1282.5), (370, 1286.5), (400, 1
 FIN_PITCH, FIN_W = 24.44, 0.42 / S          # vertical fins, 1.18 mm apart
 SIDE_FINS = [403.5, 380.5, 357, 334.5]      # fins in the closed side parts of the grille
 SLOT_TOP = 1218                             # see-through part between the fins starts here
+RAIL = 9                                    # rail under the fins, px above the grille's lower edge
 RADAR = (606, 1128, 1168)                   # sensor plate under the band: x0, y0, y1
 
 # lower bumper: black valance with a slot, black splitter under it
@@ -347,6 +344,9 @@ SPLITTER_TOP = [(220, 1350), (260, 1345), (290, 1346.5), (300, 1347), (340, 1351
                 (CX, 1353)]
 SLOT = [(CX, 1340), (470, 1338), (420, 1336), (380, 1333), (340, 1327), (300, 1323), (302, 1329),
         (312, 1336), (340, 1343), (380, 1348), (420, 1356), (CX, 1356)]
+SLOT_POSTS = [457, 633, CX]                 # dividers in the valance slot (and mirrored)
+BAR_C = [(CX, 1359.5), (400, 1359.5), (340, 1358.5), (300, 1355.5), (260, 1353.5), (225, 1356.5)]
+RECESS = [(CX, 1359.5), (412, 1359.5), (401, 1367.5), (CX, 1367.5)]   # dark band in the splitter
 BADGE = (722, 886, 909.5)                   # blank badge for the lettering: x0, y0, y1
 
 
@@ -416,6 +416,15 @@ def spec():
     body = sym([(CX, 1364), (330, 1360), (220, 1355), (190, 1353.5), SIL_BOTTOM[-1]] + SIL_SIDE)
     slot = sym(SLOT)
     splitter = sym(SIL_BOTTOM + SPLITTER_TOP)
+    # splitter relief: its upper bar stands proud, a dark band is sunk in below it
+    bar_c = sym(BAR_C + SPLITTER_TOP)
+    recess = sym(RECESS)
+    posts = [mm([(x - 4.7, 1335), (x + 4.7, 1335), (x + 4.7, 1355), (x - 4.7, 1355)])
+             for x0 in SLOT_POSTS for x in {x0, 2 * CX - x0}]
+    # rail along the bottom of the grille that the fins stand on
+    rail_pts = [(431, grille_bottom(431))] + [q for q in GRILLE_BOTTOM if q[0] > 431]
+    rail = sym([(CX, 1317 - RAIL)] + [(x, y - RAIL) for x, y in rail_pts[-2::-1]] +
+               [(x, y - 1.5) for x, y in rail_pts[:-1]] + [(CX, 1317 - 1.5)])
     # folds in the body color, 0.2 mm below the face: the sides of the bumper beside the air
     # curtains, and the lower lip under the bumper-lip seam and the grille (it runs on under
     # the valance and splitter, which are laid over it afterwards)
@@ -480,9 +489,13 @@ def spec():
         *[layer("Grille fin", "black", 0, 2.6, f) for f in fins],
         *sunk("Air curtain L", 2.0, air_l),
         *sunk("Air curtain R", 2.0, air_r),
-        *sunk("Lower valance", 2.6, valance),
+        layer("Grille rail", "black", 0, 2.6, rail),
+        *sunk("Lower valance", 2.8, valance),
         layer("Valance slot", "void", 2.0, 4.0, slot),
-        layer("Splitter", "black", 0, SURFACE, splitter),
+        *sunk("Splitter", 2.8, splitter),
+        layer("Splitter upper bar", "black", 0, SURFACE, bar_c),
+        *[layer("Valance slot post", "black", 0, 2.8, q) for q in posts],
+        layer("Splitter band", "void", 2.4, 4.0, recess),
         *sunk("Blank lettering badge", 3.4 - BADGE_RECESS, badge),
         *[layer(f"Panel line {n} (gap)", "void", z, 4.0, g) for n, z, g in gaps],
         # the headlights go in after the grooves: the crease between them ends inside the glass

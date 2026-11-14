@@ -139,6 +139,14 @@ rules come from that review; follow them from the first version.
   To make that possible put the groove floors in before the black areas and the gaps after
   them (a lower black part then keeps its own depth where a groove runs into it), and add
   the headlight glass after the gaps.
+- A hard edge inside one part is not a groove (fourth Epiq review: the bumper corner edge
+  beside the headlight, the edge from the air curtain to the grille frame). Show it as a
+  0.2 to 0.4 mm height step. Grooves are for gaps between parts and for the creases the
+  owner has confirmed.
+- Corners of black trim: check whether they bulge outwards or cut inwards, on the better-lit
+  side of the car, and trace them with enough points to keep the curve.
+- The lower bumper needs the same detail as the grille: the rail under the fins, the bars
+  and slot of the valance with its dividers, the splitter's proud bar and sunk band.
 - Only grooves the car has. The Epiq has no hood-fender line (its hood runs out to the
   edge); the owner had it removed. A bright or dark edge at the side of the hood is not
   proof of a seam: look for it in other photos of the car or ask.
