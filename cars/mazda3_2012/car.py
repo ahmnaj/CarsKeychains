@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from keychain.parts import BADGE_RECESS, BASE_TOP, SURFACE, keyring_tab_ref, layer  # noqa: E402
 
-CX, BOT = 318.0, 403.0          # symmetry axis and bumper bottom (px)
+CX, BOT = 318.0, 408.0          # symmetry axis and lowest point of the valance (px)
 S = 62.5 / 550.0                # mm per photo pixel
 
 
@@ -51,7 +51,9 @@ def circ(cx, cy, r, n=48):
 
 # --- traced shapes (left side, photo px) -------------------------------------
 
-SILHOUETTE = [(318, 403), (54, 403), (47, 400), (44, 394), (43, 380), (42, 300), (43, 250),
+# bottom edge: the black valance wings hang below the bumper corners, centre lip a little higher
+SILHOUETTE = [(318, 405), (166, 405), (158, 408), (80, 408), (70, 405.8), (60, 404.8), (52, 402.5),
+              (47, 399.5), (44, 394), (43, 380), (42, 300), (43, 250),
               (44, 232), (46, 220), (49, 208), (52, 198), (56, 190), (60, 183), (65, 176),
               (71, 170), (80, 166), (100, 164.5), (200, 166), (318, 167)]
 
@@ -266,12 +268,20 @@ def spec():
     mesh += honeycomb(fog_area, x_mid=86) + honeycomb(flip(fog_area), x_mid=2 * CX - 86)
     lip = sym([(318, 270), (200, 267.5), (146, 266), (140, 268), (140, 272.5)] + GRILLE_TOP[::-1])
     chin = sym(GRILLE_BOTTOM[::-1] + [(177, 361.5)] + FOG_BOTTOM + [(57, 368)] + CHIN_BOTTOM[::-1])
-    # lower bumper is body color; black corner slots (chrome-edged) and a slim centre intake
+    # lower bumper corners are body color with black slots (chrome-edged on the car)
     slot_px = [(64, 375.5), (80, 377.5), (130, 384), (137, 385), (138.5, 391), (136.5, 397),
                (130, 396.5), (100, 395.5), (80, 394.5), (74, 393), (70, 389), (66.5, 382)]
     slot_l, slot_r = pair(slot_px)
-    intake = sym([(318, 386.5), (290, 384.5), (250, 383), (200, 384), (180, 387.3), (186, 393),
-                  (200, 395.5), (250, 396.5), (318, 397.5)])
+    # under the chin (straight-on photo, brightened): the blue edge swoops up from the
+    # bumper corners to the chin, a dark valance sits behind it with wings that hang below
+    # the corners, the intake is the deepest part, and a blue lip runs along the bottom
+    swoop = [(200, 384.5), (192, 387.5), (185, 390.7), (175, 397), (165, 402)]
+    valance = sym([(318, 386.5), (290, 384.5), (250, 383)] + swoop +
+                  [(150, 404.3), (115, 404.5), (80, 405), (66, 405.3), (70, 405.8), (80, 408),
+                   (158, 408), (166, 405), (318, 405)])
+    intake = sym([(318, 386.5), (290, 384.5), (250, 383), (200, 384.5), (192, 387.5), (186, 391.5),
+                  (190, 395), (200, 396), (250, 396.5), (318, 397)])
+    lower_lip = sym([(318, 398.5), (250, 398), (212, 397.5), (204, 400), (208, 405), (318, 405)])
     badge = mm([(318 + 24.5 * math.cos(2 * math.pi * i / 64), 247 + 15 * math.sin(2 * math.pi * i / 64))
                 for i in range(64)])                # 5.6 x 3.4 mm oval
 
@@ -290,7 +300,7 @@ def spec():
             gaps.append((n, mm(stroke(ln))))
 
     lit_l, lit_r = pair(LIT_PANEL)
-    pockets = [lit_l, lit_r, hl_l, hl_r, fog_l, fog_r, grille, badge, slot_l, slot_r, intake]
+    pockets = [lit_l, lit_r, hl_l, hl_r, fog_l, fog_r, grille, badge, slot_l, slot_r]
     layers = [
         layer("Backing", "black", 0, BASE_TOP, outline, holes=[eye_l, eye_r]),
         layer("Keyring tab", "black", 0, SURFACE, tab, holes=[tab_hole]),
@@ -309,7 +319,7 @@ def spec():
         layer("Grille panel", "black", 0, 2.6, grille_panel),
         layer("Lower corner slot L", "black", 0, 2.0, slot_l),
         layer("Lower corner slot R", "black", 0, 2.0, slot_r),
-        layer("Lower intake", "black", 0, 2.0, intake),
+        layer("Lower valance", "black", 0, 2.6, valance),
         *[layer(f"Panel line {n}", "black", 0, 2.5, g) for n, g in grooves],
         layer("Blank logo badge", "black", 0, SURFACE - BADGE_RECESS, badge),
         layer("Projector ring L", "white", 2.5, SURFACE, ring_l, holes=[eye_l]),
@@ -320,6 +330,9 @@ def spec():
         layer("Indicator R", "orange", 2.5, SURFACE, amber_r),
         *[layer(f"Panel line {n} (gap)", "void", 2.5, 4.0, g) for n, g in gaps],
         *[layer("Mesh cell", "void", 0, 4.0, m) for m in mesh],
+        layer("Space over valance", "void", 2.6, 4.0, valance),
+        layer("Lower intake", "void", 2.0, 4.0, intake),
+        layer("Lower lip", "body_blue", BASE_TOP, SURFACE, lower_lip),
     ]
     colors = {"black": [0.02, 0.02, 0.02], "body_blue": [0.2, 0.36, 0.55],
               "white": [0.961, 0.961, 0.961], "orange": [0.867, 0.486, 0.059]}
