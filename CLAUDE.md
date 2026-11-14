@@ -22,6 +22,7 @@ pip install -r requirements.txt   # CadQuery; takes ~10 min on a fresh cloud mac
 - `tools/photo_grid.py <photo> <png> x0 y0 x1 y1 [scale] [grid] [gamma]` – zoomed crop of a photo with a pixel grid, for measuring; gamma 0.4 brightens shadows.
 - `tools/overlay.py <car.py> <photo> <png> [x0 y0 x1 y1]` – draws the car's polygons over its photo to check the trace (5x enlarged; give a box for big photos). Save the full-face overlay as `out/overlay.png` for the hand-over.
 - `tools/seam_map.py <photo> <png> x0 y0 x1 y1 [scale] [gain]` – local-contrast view with a pixel grid: seams show as crisp dark lines, folds stay soft. Use it to find every panel line before tracing any.
+- `tools/ends_view.py <car.py> <png> [x y [r]]` – close-ups of the built model at every groove end (or round one photo px), body light and black dark. Look at every tile before hand-over.
 - `cars/<car>/` – one folder per car: `spec.json` or `car.py`, plus `out/`.
 
 ## Spec format
@@ -105,7 +106,7 @@ rules come from that review; follow them from the first version.
   overlay on the photo with the hand-over. The silhouette matters most.
 - Extent: from the hood, cut a little above the headlights, down to the bottom of the
   bumper. No wheels, mirrors, windscreen or roof.
-- Panel lines are wanted: hood shut line, hood-fender lines, fender-bumper seams. Make
+- Panel lines are wanted: hood shut line, hood-fender lines where the car has them, fender-bumper seams. Make
   them 0.40 mm grooves (not thicker) centered on the darkest pixels of the seam: black
   floor at 2.5 plus a void above. Run each one right through to the silhouette edge or
   into the part it meets, so the body-color part splits into separate pieces along it; a
@@ -131,6 +132,16 @@ rules come from that review; follow them from the first version.
   out, use the other. Each crease still has to end in the silhouette or in another part
   (headlight, grille, black trim, another groove). Only soft shading stays a 0.2 mm step
   or is left out.
+- Every groove end must be visibly connected (third Epiq review). Touching the next part
+  at a corner, or stopping a fraction of a mm short of the edge, reads as cut off. Run the
+  line a few px on into the part it meets (grille, air curtain, headlight glass, black trim,
+  another groove) or right off the silhouette, and check each end in `tools/ends_view.py`.
+  To make that possible put the groove floors in before the black areas and the gaps after
+  them (a lower black part then keeps its own depth where a groove runs into it), and add
+  the headlight glass after the gaps.
+- Only grooves the car has. The Epiq has no hood-fender line (its hood runs out to the
+  edge); the owner had it removed. A bright or dark edge at the side of the hood is not
+  proof of a seam: look for it in other photos of the car or ask.
 - Black areas must not be flat. Give grilles and valances their real structure with
   0.4 to 1 mm steps (slot, panel, mesh, intake) and make meshes see-through: for a
   honeycomb grille, wide flat hexagon cells about 2.5 x 0.9 mm with 0.4 mm webs, rows

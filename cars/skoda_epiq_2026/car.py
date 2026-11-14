@@ -9,7 +9,7 @@ wheels, mirrors and the windscreen are left off as on the other cars.
 
 The painted body is its own part ("body_black") so it can get its own black filament; the
 unpainted trim (Tech-Deck face, band between the headlights, grille, splitter) belongs to
-the black base part. Panel lines (hood shut line, hood-fender lines, fender-bumper
+the black base part. Panel lines (hood shut line, fender-bumper
 seams, the crease across the lower bumper, the bumper-lip seams, the joints in the grille
 frame and the seam between light strip and gloss panel) are 0.40 mm grooves. So are the sharp
 creases: hood centre, under the light strips, bumper corners, and headlight tip to tip. The SKODA lettering is left as a blank badge (0.3 below the hood).
@@ -255,12 +255,10 @@ SIL_SIDE = [(166, 1335), (160, 1310), (157.5, 1285), (157, 1230), (157.5, 1190),
 SILHOUETTE = SIL_BOTTOM + SIL_SIDE
 
 # panel lines, on the darkest pixels of each seam (measured on a dark-line map of the photo)
-SHUT = [(207, 857), (209, 860), (213, 863.7), (225, 869), (240, 873), (255, 876), (270, 879),
+SHUT = [(199, 845), (202.6, 850), (205.8, 855), (209, 860), (213, 863.7), (225, 869), (240, 873), (255, 876), (270, 879),
         (300, 884), (330, 887), (360, 890), (390, 893), (420, 895), (450, 897), (510, 900),
         (570, 901.5), (630, 903), (660, 904.5), (675, 907.5), (690, 914.5), (705, 921.5),
         (720, 923), (CX, 924)]
-HOOD_FENDER = [(257.5, 808), (252, 824), (249, 832), (243.5, 840), (240, 848), (234.5, 856),
-               (230, 864), (228.5, 869.5)]
 FENDER_BUMPER = [(211, 863), (207, 868), (200, 879), (190, 891.7), (180, 905), (171.7, 918),
                  (165.8, 928), (158, 941)]
 # crease across the whole lower bumper, from side to side
@@ -270,8 +268,8 @@ CREASE = [(146, 1278.5), (160, 1283.5), (173.7, 1288.7), (190, 1295), (210, 1299
 # seam between the bumper and its lower lip: from the air curtain to the tip of the grille
 # frame; from there on it is the lower edge of the grille
 LIP_SEAM = [(211, 1248), (215, 1254), (222, 1258), (228, 1260), (234, 1262), (240, 1264.5),
-            (246, 1267), (252, 1268.5), (262, 1269), (270, 1270), (280, 1272), (291.5, 1274),
-            (303, 1276.5)]
+            (246, 1267), (252, 1268.5), (262, 1269), (270, 1270), (280, 1272), (291.5, 1273.5),
+            (302, 1272.5), (314, 1269.5)]
 FRAME_JOINT = [(500, 1128), (500, 1188)]          # joint in the grille frame
 LAMP_SEAM = [(451, 935), (420, 964)]                  # light strip unit to gloss panel
 # creases: sharp folds in the bodywork that read as lines on the car (the owner wants these
@@ -281,17 +279,17 @@ HOOD_CREASE = [(670, 808), (675.3, 824), (679, 834), (681.5, 842), (683.5, 850),
                (704.5, 916), (706, 921.5)]                # edge of the raised hood centre
 UNDER_STRIP = [(204, 916.5), (215, 920), (230, 924), (245, 928.5), (260, 931.5), (275, 936.5),
                (290, 940.5), (305, 943.5), (320, 947.5), (335, 953.5), (350, 959.5), (365, 965),
-               (380, 971), (395, 976.5), (410, 982), (425, 987.5), (440, 994), (452, 997),
-               (464, 998)]                                # under the light strip, Tech-Deck end to end
+               (380, 971), (395, 976.5), (410, 982), (425, 987.5), (440, 993.5), (452, 996),
+               (466, 996.5), (482, 995)]                                # under the light strip, Tech-Deck end to end
 CORNER_EDGE = [(203.5, 909), (202, 922), (201, 940), (201, 984), (200, 992), (198.5, 1030),
                (198, 1064)]                               # bumper corner: Tech-Deck end to air curtain
-BAR_CREASE = [(426, 1025), (450, 1023), (480, 1024.5), (510, 1028.5), (540, 1030), (600, 1030),
+BAR_CREASE = [(418, 1027), (427, 1025), (450, 1023), (480, 1024.5), (510, 1028.5), (540, 1030), (600, 1030),
               (700, 1031), (CX, 1032.5)]                  # from headlight tip to headlight tip
 # raised centre of the hood (a fold, 0.2 mm step)
 DOME_EDGE = [(675.3, TOP)] + HOOD_CREASE[2:-1]
 
 # (line, depth of its floor, runs across the centre)
-LINES = {"hood shut line": (SHUT, 2.5, True), "hood-fender line": (HOOD_FENDER, 2.5, False),
+LINES = {"hood shut line": (SHUT, 2.5, True), 
          "fender-bumper seam": (FENDER_BUMPER, 2.5, False), "lower bumper crease": (CREASE, 2.5, True),
          "bumper-lip seam": (LIP_SEAM, 2.5, False), "grille frame joint": (FRAME_JOINT, 2.5, False),
          "light strip seam": (LAMP_SEAM, 2.0, False),
@@ -370,17 +368,20 @@ def spec():
     side_x = interp([(y, x) for x, y in SIL_SIDE[:8]][::-1], BOT - hole_y)
     tab, tab_hole, tab_fillets = keyring_tab_ref((side_x - CX) * S, hole_y * S, mm(outline))
 
-    # hood: stops at the hood-fender lines and at the upper edge of the shut-line groove
-    shut_edge = [(x, y - half) for x, y in SHUT[4:]]
-    hood = sym([(CX, TOP)] + [(x + half, y) for x, y in HOOD_FENDER[1:-1]] + shut_edge)
+    # hood: stops at the upper edge of the shut-line groove
+    shut_edge = [(x, y - half) for x, y in SHUT[6:]]
+    # (there is no hood-fender line on this car: the hood runs out to the silhouette, and the
+    # shut line with its hooked end runs through to the edge)
+    hood = sym(SIL_SIDE[:-6:-1] + [(205.4, 845), (209.3, 852.8), (212.5, 857.8), (214.5, 859.8),
+                                   (226, 865)] + shut_edge)
     dome = sym([(CX, TOP)] + DOME_EDGE + shut_edge[-2:])
 
     # Tech-Deck face and what stands on it
-    tech_deck = sym([(CX, 924)] + SHUT[-2:1:-1] + TD_END + TD_LOWER)
-    lamp_px = SHUT[2:12] + [LAMP_TIP] + LAMP_BOTTOM[::-1] + [TD_LOWER[1], TD_LOWER[0]] + TD_END[::-1]
+    tech_deck = sym([(CX, 924)] + SHUT[-2:3:-1] + TD_END + TD_LOWER)
+    lamp_px = SHUT[4:14] + [LAMP_TIP] + LAMP_BOTTOM[::-1] + [TD_LOWER[1], TD_LOWER[0]] + TD_END[::-1]
     lamp_l, lamp_r = pair(lamp_px)
     wedge_l, wedge_r = pair([TD_LOWER[1]] + LAMP_BOTTOM + [LAMP_TIP] + TD_LOWER[10:1:-1])
-    strip = sym([(CX, 924)] + SHUT[-2:10:-1] + [LAMP_TIP] + STRIP_BOTTOM)
+    strip = sym([(CX, 924)] + SHUT[-2:12:-1] + [LAMP_TIP] + STRIP_BOTTOM)
     slits = [p for x0, y0, x1, y1, w in SLITS for p in both([(x0, y0), (x0 + w, y0), (x1 + w, y1), (x1, y1)])]
     slits += [p for d in DIMPLES for p in both(d)]
     slits.append(mm([(CX - 6.5, 931), (CX + 6.5, 931), (CX + 4, 938.5), (CX - 4, 938.5)]))
@@ -461,6 +462,11 @@ def spec():
         layer("Grille frame", "body_black", BASE_TOP, 3.2, frame),
         *[layer("Bumper side fold", "void", 2.8, 4.0, p) for p in both(side_px)],
         layer("Lower lip fold", "void", 2.8, 4.0, lower),
+        # groove floors go in before the black areas, so where a groove runs on into a lower
+        # black part (grille, air curtain, Tech-Deck) that part's own depth wins and no ledge
+        # is left; the gaps are cut at the end
+        *[layer("Panel line end", "void", BASE_TOP, 4.0, c) for c in caps],
+        *[layer(f"Panel line {n}", "black", 0, z, g) for n, z, g in grooves],
         *sunk("Tech-Deck face", 2.4, tech_deck),
         layer("Light strip housing L", "black", 0, 2.8, lamp_l),
         layer("Light strip housing R", "black", 0, 2.8, lamp_r),
@@ -474,17 +480,16 @@ def spec():
         *[layer("Grille fin", "black", 0, 2.6, f) for f in fins],
         *sunk("Air curtain L", 2.0, air_l),
         *sunk("Air curtain R", 2.0, air_r),
-        layer("Headlight L (space)", "void", 2.8, 4.0, hl_l),
-        layer("Headlight R (space)", "void", 2.8, 4.0, hl_r),
-        layer("Headlight glass L", "dark_grey", BASE_TOP, 2.8, hl_l),
-        layer("Headlight glass R", "dark_grey", BASE_TOP, 2.8, hl_r),
         *sunk("Lower valance", 2.6, valance),
         layer("Valance slot", "void", 2.0, 4.0, slot),
         layer("Splitter", "black", 0, SURFACE, splitter),
         *sunk("Blank lettering badge", 3.4 - BADGE_RECESS, badge),
-        *[layer("Panel line end", "void", BASE_TOP, 4.0, c) for c in caps],
-        *[layer(f"Panel line {n}", "black", 0, z, g) for n, z, g in grooves],
         *[layer(f"Panel line {n} (gap)", "void", z, 4.0, g) for n, z, g in gaps],
+        # the headlights go in after the grooves: the crease between them ends inside the glass
+        layer("Headlight L (space)", "void", 2.8, 4.0, hl_l),
+        layer("Headlight R (space)", "void", 2.8, 4.0, hl_r),
+        layer("Headlight glass L", "dark_grey", BASE_TOP, 2.8, hl_l),
+        layer("Headlight glass R", "dark_grey", BASE_TOP, 2.8, hl_r),
         *[layer("Light strip LED", "white", 2.0, SURFACE, p) for p in leds],
         *[layer("Grille opening", "void", 0, 4.0, s) for s in slots],
         *[layer("Headlight lens", "void", 0, 4.0, e) for e in eyes],
