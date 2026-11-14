@@ -9,7 +9,9 @@ wheels, mirrors and the windscreen are left off as on the other cars.
 
 The painted body is its own part ("body_black") so it can get its own black filament; the
 unpainted trim (Tech-Deck face, band between the headlights, grille, splitter) belongs to
-the black base part. The SKODA lettering is left as a blank badge (0.3 below the hood).
+the black base part. Panel lines (hood shut line, hood-fender lines, fender-bumper
+seams, the crease across the lower bumper, the bumper-lip seams, the joints in the grille
+frame and the seam between light strip and gloss panel) are 0.40 mm grooves. The SKODA lettering is left as a blank badge (0.3 below the hood).
 """
 import math
 import sys
@@ -193,23 +195,29 @@ def clip_half(poly, a, b, keep):
 
 
 def groove(line, outline_px):
-    """Groove polygon along a px polyline, trimmed flush where it runs off the silhouette."""
-    poly = stroke(line)
+    """Groove along a px polyline: (floor polygon, [end caps]).
+
+    Where the line runs off the silhouette the floor is trimmed flush with it; the piece of
+    the stroke beyond is returned as a cap, to be emptied so no body-color crumb is left
+    between the trimmed floor and the edge.
+    """
+    poly, caps = stroke(line), []
     for pts in (line, line[::-1]):
         end = pts[0]
         if inside(end, outline_px):
             continue
-        nxt = next((q for q in pts if inside(q, outline_px)), None)   # first point inside
-        if nxt is None:
+        k = next((i for i, q in enumerate(pts) if inside(q, outline_px)), None)
+        if k is None:
             continue
-        # outline segment crossed between the last inside point and the end
+        nxt = pts[min(k + 1, len(pts) - 1)]              # a point safely inside
         for a, b in zip(outline_px, outline_px[1:] + outline_px[:1]):
             d = lambda p: (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
             e = lambda p: (end[0] - nxt[0]) * (p[1] - nxt[1]) - (end[1] - nxt[1]) * (p[0] - nxt[0])
             if d(end) * d(nxt) < 0 and e(a) * e(b) <= 0:
+                caps.append(clip_half(stroke(line), a, b, end))
                 poly = clip_half(poly, a, b, nxt)
                 break
-    return poly
+    return poly, caps
 
 
 def interp(pts, x):
@@ -245,25 +253,38 @@ SIL_SIDE = [(166, 1335), (160, 1310), (157.5, 1285), (157, 1230), (157.5, 1190),
             (216, 825.5), (219, TOP), (CX, TOP)]
 SILHOUETTE = SIL_BOTTOM + SIL_SIDE
 
-# panel lines, on the darkest pixels of each seam
-SHUT = [(210, 861), (225, 869), (240, 873), (255, 876), (270, 879), (300, 884), (330, 887),
-        (360, 890), (390, 893), (420, 895), (450, 897), (510, 900), (570, 901.5), (630, 903),
-        (660, 904.5), (675, 907.5), (690, 914.5), (705, 921.5), (720, 923), (CX, 924)]
-HOOD_FENDER = [(263, 812), (258.5, 826), (255.5, 832), (250, 840), (246, 848), (241, 856),
-               (237, 864), (232, 870.5)]
-FENDER_BUMPER = [(212, 862), (205, 864), (200, 873), (198, 880), (192, 890), (184, 900),
-                 (178, 910), (172, 920), (166, 930), (157, 944)]
-LOWER_CREASE = [(148, 1289.5), (165, 1292.5), (195, 1297.5), (210, 1300.5), (225, 1303.5), (240, 1306.5),
-                (255, 1308.5), (270, 1311.5), (285, 1313.5), (300, 1315.5)]
-LINES = {"hood-fender line": HOOD_FENDER, "fender-bumper seam": FENDER_BUMPER,
-         "lower bumper crease": LOWER_CREASE + [(308, 1316.5)]}
+# panel lines, on the darkest pixels of each seam (measured on a dark-line map of the photo)
+SHUT = [(207, 857), (209, 860), (213, 863.7), (225, 869), (240, 873), (255, 876), (270, 879),
+        (300, 884), (330, 887), (360, 890), (390, 893), (420, 895), (450, 897), (510, 900),
+        (570, 901.5), (630, 903), (660, 904.5), (675, 907.5), (690, 914.5), (705, 921.5),
+        (720, 923), (CX, 924)]
+HOOD_FENDER = [(257.5, 808), (252, 824), (249, 832), (243.5, 840), (240, 848), (234.5, 856),
+               (230, 864), (228.5, 869.5)]
+FENDER_BUMPER = [(211, 863), (207, 868), (200, 879), (190, 891.7), (180, 905), (171.7, 918),
+                 (165.8, 928), (158, 941)]
+# crease across the whole lower bumper, from side to side
+CREASE = [(146, 1278.5), (160, 1283.5), (173.7, 1288.7), (190, 1295), (210, 1299), (230, 1303),
+          (250, 1306), (270, 1310), (290, 1312.5), (310, 1315), (330, 1318), (370, 1323),
+          (410, 1326), (450, 1327.5), (490, 1328.2), (570, 1329), (650, 1329.5), (CX, 1330)]
+# seam between the bumper and its lower lip: from the air curtain to the tip of the grille
+# frame; from there on it is the lower edge of the grille
+LIP_SEAM = [(211, 1248), (215, 1254), (222, 1258), (228, 1260), (234, 1262), (240, 1264.5),
+            (246, 1267), (252, 1268.5), (262, 1269), (270, 1270), (280, 1272), (291.5, 1274),
+            (303, 1276.5)]
+FRAME_JOINT = [(500, 1128), (500, 1188)]          # joint in the grille frame
+LAMP_SEAM = [(451, 935), (420, 964)]                  # light strip unit to gloss panel
+# (line, depth of its floor, runs across the centre)
+LINES = {"hood shut line": (SHUT, 2.5, True), "hood-fender line": (HOOD_FENDER, 2.5, False),
+         "fender-bumper seam": (FENDER_BUMPER, 2.5, False), "lower bumper crease": (CREASE, 2.5, True),
+         "bumper-lip seam": (LIP_SEAM, 2.5, False), "grille frame joint": (FRAME_JOINT, 2.5, False),
+         "light strip seam": (LAMP_SEAM, 2.0, False)}
 
 # raised centre of the hood (a fold, 0.2 mm step)
 DOME_EDGE = [(674, TOP), (680, 840), (686, 855), (692, 870), (696, 888), (700, 905), (703, 916)]
 
 # Tech-Deck face: gloss black panel under the hood carrying the light strips
-TD_END = [(206, 872), (204, 885), (204, 905), (206, 913)]
-TD_LOWER = [(212, 916), (225, 913), (240, 915), (255, 919), (270, 922), (300, 928), (330, 934),
+TD_END = [(208.5, 871), (207, 884), (204.5, 898), (203.5, 910), (205, 916), (208.5, 918.5)]
+TD_LOWER = [(214, 916), (225, 913), (240, 915), (255, 919), (270, 922), (300, 928), (330, 934),
             (360, 941), (390, 947), (405, 956), (418, 966), (435, 981), (450, 991), (465, 997),
             (480, 1000), (510, 1003), (555, 1005), (600, 1006), (690, 1007), (CX, 1007)]
 LAMP_BOTTOM = [(240, 909), (270, 912), (300, 917), (350, 925), (400, 932)]   # under the LED frame
@@ -293,25 +314,24 @@ AIR_CURTAIN = [(197, 1058), (223, 1058), (222, 1200), (220, 1240), (215, 1252), 
 BAND_TOP = [(CX, 1059), (600, 1059.3), (500, 1059.7), (460, 1061), (436, 1061.5)]
 BAND_END = [(424, 1067), (418, 1078), (409, 1090), (390, 1101), (369, 1110), (352, 1125),
             (336, 1140), (316, 1160), (296, 1180), (277, 1200), (262, 1220), (253, 1240),
-            (249, 1255), (252, 1266)]
-ARC1 = [(259, 1263), (266, 1255), (282, 1240), (298, 1220), (320, 1200), (342, 1180), (366, 1160),
+            (249, 1253), (253, 1263)]
+ARC1 = [(261, 1268), (267, 1256), (282, 1240), (298, 1220), (320, 1200), (342, 1180), (366, 1160),
         (385, 1148), (408, 1140), (430, 1136.5), (460, 1135), (600, 1134), (CX, 1134)]
 # grille: inner edge of the body-color frame and the grille's lower edge
-ARC2 = [(292, 1272), (308, 1256), (322, 1240), (347, 1220), (372, 1200), (390, 1190),
+ARC2 = [(291.5, 1273), (308, 1256), (322, 1240), (347, 1220), (372, 1200), (390, 1190),
         (412, 1184.5), (440, 1183), (CX, 1183)]
-GRILLE_BOTTOM = [(300, 1275), (330, 1281), (360, 1285.5), (390, 1290), (420, 1293), (440, 1296),
-                 (452, 1301), (462, 1307), (475, 1310.5), (500, 1311), (CX, 1311)]
+GRILLE_BOTTOM = [(300, 1275), (330, 1280), (350, 1282.5), (370, 1286.5), (400, 1290), (425, 1292.5),
+                 (434, 1295), (441, 1301), (449, 1308.5), (458, 1312.5), (472, 1315), (500, 1316),
+                 (CX, 1317)]
 FIN_PITCH, FIN_W = 24.44, 0.42 / S          # vertical fins, 1.18 mm apart
 SIDE_FINS = [403.5, 380.5, 357, 334.5]      # fins in the closed side parts of the grille
 SLOT_TOP = 1218                             # see-through part between the fins starts here
 RADAR = (606, 1128, 1168)                   # sensor plate under the band: x0, y0, y1
 
 # lower bumper: black valance with a slot, black splitter under it
-VALANCE_TOP = [(CX, 1322.5), (500, 1323.5), (450, 1326), (420, 1326), (390, 1325), (360, 1322),
-               (330, 1318), (300, 1315.5)]
 SPLITTER_TOP = [(220, 1350), (260, 1345), (290, 1346.5), (300, 1347), (340, 1351), (400, 1352.5),
                 (CX, 1353)]
-SLOT = [(CX, 1339), (470, 1338), (420, 1336), (380, 1333), (340, 1327), (300, 1323), (302, 1329),
+SLOT = [(CX, 1340), (470, 1338), (420, 1336), (380, 1333), (340, 1327), (300, 1323), (302, 1329),
         (312, 1336), (340, 1343), (380, 1348), (420, 1356), (CX, 1356)]
 BADGE = (722, 886, 909.5)                   # blank badge for the lettering: x0, y0, y1
 
@@ -335,16 +355,16 @@ def spec():
     tab, tab_hole, tab_fillets = keyring_tab_ref((side_x - CX) * S, hole_y * S, mm(outline))
 
     # hood: stops at the hood-fender lines and at the upper edge of the shut-line groove
-    shut_edge = [(x, y - half) for x, y in SHUT[2:]]
+    shut_edge = [(x, y - half) for x, y in SHUT[4:]]
     hood = sym([(CX, TOP)] + [(x + half, y) for x, y in HOOD_FENDER[1:-1]] + shut_edge)
     dome = sym([(CX, TOP)] + DOME_EDGE + shut_edge[-2:])
 
     # Tech-Deck face and what stands on it
-    tech_deck = sym([(CX, 924)] + SHUT[-2::-1] + TD_END + TD_LOWER)
-    lamp_px = SHUT[:10] + [LAMP_TIP] + LAMP_BOTTOM[::-1] + [TD_LOWER[1], TD_LOWER[0]] + TD_END[::-1]
+    tech_deck = sym([(CX, 924)] + SHUT[-2:1:-1] + TD_END + TD_LOWER)
+    lamp_px = SHUT[2:12] + [LAMP_TIP] + LAMP_BOTTOM[::-1] + [TD_LOWER[1], TD_LOWER[0]] + TD_END[::-1]
     lamp_l, lamp_r = pair(lamp_px)
     wedge_l, wedge_r = pair([TD_LOWER[1]] + LAMP_BOTTOM + [LAMP_TIP] + TD_LOWER[10:1:-1])
-    strip = sym([(CX, 924)] + SHUT[-2:8:-1] + [LAMP_TIP] + STRIP_BOTTOM)
+    strip = sym([(CX, 924)] + SHUT[-2:10:-1] + [LAMP_TIP] + STRIP_BOTTOM)
     slits = [p for x0, y0, x1, y1, w in SLITS for p in both([(x0, y0), (x0 + w, y0), (x1 + w, y1), (x1, y1)])]
     slits += [p for d in DIMPLES for p in both(d)]
     slits.append(mm([(CX - 6.5, 931), (CX + 6.5, 931), (CX + 4, 938.5), (CX - 4, 938.5)]))
@@ -371,33 +391,45 @@ def spec():
         a, b = xl + FIN_W / 2, xr - FIN_W / 2
         slots += both([(a, SLOT_TOP), (b, SLOT_TOP), (b, grille_bottom(b) - 9), (a, grille_bottom(a) - 9)])
     a = fin_x[0] + FIN_W / 2
-    slots.append(mm([(a, SLOT_TOP), (2 * CX - a, SLOT_TOP), (2 * CX - a, 1302), (a, 1302)]))
+    slots.append(mm([(a, SLOT_TOP), (2 * CX - a, SLOT_TOP), (2 * CX - a, 1308), (a, 1308)]))
 
     # lower bumper
     # (valance and body both run on under the splitter, which is laid over them afterwards)
-    valance = sym(VALANCE_TOP + [(290, 1346.5), (293, 1358), (CX, 1361)])
+    valance = sym(CREASE[:8:-1] + [(290, 1346.5), (293, 1358), (CX, 1361)])
     body = sym([(CX, 1364), (330, 1360), (220, 1355), (190, 1353.5), SIL_BOTTOM[-1]] + SIL_SIDE)
     slot = sym(SLOT)
     splitter = sym(SIL_BOTTOM + SPLITTER_TOP)
-    # folds in the body color, 0.2 mm below the face: the sides of the bumper beside the
-    # air curtains, and the lower corners under the crease
-    side_px = [(140, 960), (150, 938), (166, 930), (172, 920), (178, 910), (184, 900), (192, 890),
-               (198, 880), (200, 873), (201, 900), (200, 945), (199, 1000), (198, 1058), (196, 1100),
-               (198, 1200), (203, 1240), (209, 1252), (209, 1300.3), (195, 1297.5), (165, 1292.5), (140, 1288.5)]
-    corner_px = [(140, 1288.5)] + LOWER_CREASE[1:] + [(290, 1346.5), (260, 1345), (220, 1350),
-                                                    (172, 1348), (150, 1352)]
+    # folds in the body color, 0.2 mm below the face: the sides of the bumper beside the air
+    # curtains, and the lower lip under the bumper-lip seam and the grille (it runs on under
+    # the valance and splitter, which are laid over it afterwards)
+    side_px = [(140, 960), (150, 938), (165.8, 928), (171.7, 918), (180, 905), (190, 891.7),
+               (200, 879), (201, 900), (200, 945), (199, 1000), (198, 1058), (196, 1100),
+               (198, 1200), (203, 1240), (207, 1250), (140, 1250)]
+    lower = sym([(CX, 1314)] + [(x, y - 3) for x, y in GRILLE_BOTTOM[-2::-1]] +
+                [(291.5, 1274.3), (262, 1269.5), (240, 1265), (225, 1259.5), (213, 1253),
+                 (203, 1245), (135, 1245), (135, 1357), (172, 1349.5), (220, 1352), (260, 1348),
+                 (300, 1350), (CX, 1356)])
     x0, y0, y1 = BADGE
     badge = mm(box(x0, y0, 2 * CX - x0, y1, 6))
 
-    # panel lines: black floor at 2.5 plus a void above it, so the body is cut clean
-    # through and splits into separate pieces along each line
-    shut_line = smooth_line(SHUT + flip(SHUT)[1:])
-    grooves, gaps = [("hood shut line", mm(stroke(shut_line)))], [("hood shut line", mm(stroke(shut_line)))]
-    for name, line in LINES.items():
-        for n, ln in ((name + " L", line), (name + " R", flip(line)[::-1])):
-            ln = smooth_line(ln)
-            grooves.append((n, mm(groove(ln, outline_px))))
-            gaps.append((n, mm(stroke(ln))))
+    # panel lines: a black floor plus a void above it, so the body is cut clean through and
+    # splits into separate pieces along each line. Every line runs through to the silhouette
+    # or into the black part it meets.
+    grooves, gaps, caps = [], [], []
+    for name, (line, floor, across) in LINES.items():
+        if across:
+            ln = smooth_line(line + flip(line)[1:])
+            g, c = groove(ln, outline_px)
+            grooves.append((name, floor, mm(g)))
+            gaps.append((name, floor, mm(stroke(ln))))
+            caps += [mm(q) for q in c]
+        else:                      # trace the left one and mirror it, so both sides are identical
+            ln = smooth_line(line)
+            g, c = groove(ln, outline_px)
+            for side, g, v in zip("LR", both(g), both(stroke(ln))):
+                grooves.append((f"{name} {side}", floor, g))
+                gaps.append((f"{name} {side}", floor, v))
+            caps += [q for cap in c for q in both(cap)]
 
     def sunk(name, top, shape, color="black"):
         """A black area lower than the face: the black itself and empty space above it."""
@@ -412,7 +444,7 @@ def spec():
         layer("Hood centre", "body_black", BASE_TOP, 3.4, dome),
         layer("Grille frame", "body_black", BASE_TOP, 3.2, frame),
         *[layer("Bumper side fold", "void", 2.8, 4.0, p) for p in both(side_px)],
-        *[layer("Lower corner fold", "void", 2.8, 4.0, p) for p in both(corner_px)],
+        layer("Lower lip fold", "void", 2.8, 4.0, lower),
         *sunk("Tech-Deck face", 2.4, tech_deck),
         layer("Light strip housing L", "black", 0, 2.8, lamp_l),
         layer("Light strip housing R", "black", 0, 2.8, lamp_r),
@@ -434,8 +466,9 @@ def spec():
         layer("Valance slot", "void", 2.0, 4.0, slot),
         layer("Splitter", "black", 0, SURFACE, splitter),
         *sunk("Blank lettering badge", 3.4 - BADGE_RECESS, badge),
-        *[layer(f"Panel line {n}", "black", 0, 2.5, g) for n, g in grooves],
-        *[layer(f"Panel line {n} (gap)", "void", 2.5, 4.0, g) for n, g in gaps],
+        *[layer("Panel line end", "void", BASE_TOP, 4.0, c) for c in caps],
+        *[layer(f"Panel line {n}", "black", 0, z, g) for n, z, g in grooves],
+        *[layer(f"Panel line {n} (gap)", "void", z, 4.0, g) for n, z, g in gaps],
         *[layer("Light strip LED", "white", 2.0, SURFACE, p) for p in leds],
         *[layer("Grille opening", "void", 0, 4.0, s) for s in slots],
         *[layer("Headlight lens", "void", 0, 4.0, e) for e in eyes],

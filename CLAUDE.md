@@ -21,6 +21,7 @@ pip install -r requirements.txt   # CadQuery; takes ~10 min on a fresh cloud mac
 - `tools/height_view.py <step> <png>` – same view with height as brightness and black drawn in grey; the only way to see steps inside black areas (grilles, valances).
 - `tools/photo_grid.py <photo> <png> x0 y0 x1 y1 [scale] [grid] [gamma]` – zoomed crop of a photo with a pixel grid, for measuring; gamma 0.4 brightens shadows.
 - `tools/overlay.py <car.py> <photo> <png> [x0 y0 x1 y1]` – draws the car's polygons over its photo to check the trace (5x enlarged; give a box for big photos). Save the full-face overlay as `out/overlay.png` for the hand-over.
+- `tools/seam_map.py <photo> <png> x0 y0 x1 y1 [scale] [gain]` – local-contrast view with a pixel grid: seams show as crisp dark lines, folds stay soft. Use it to find every panel line before tracing any.
 - `cars/<car>/` – one folder per car: `spec.json` or `car.py`, plus `out/`.
 
 ## Spec format
@@ -111,6 +112,17 @@ rules come from that review; follow them from the first version.
   groove that stops short or sits under a raised layer reads as a stroke drawn on top.
   Only real seams get a groove. A fold in a surface (light/dark boundary, no gap) is a
   0.2 mm height step instead. Do not add lines the car does not have.
+- Grooves get their own study (the owner sent the Epiq back for this). First list every
+  seam with `tools/seam_map.py` over the whole face; do not rely on the plain photo, where
+  seams on bright or dark paint are invisible. Then take each line's points from the darkest
+  pixel per row or column, not from an overlay by eye (two "corrections" made by eye on the
+  Epiq moved lines 2 to 5 px the wrong way). A line that crosses the car (lower bumper
+  crease) is one groove from edge to edge, also where it becomes the border between body
+  color and black. Seams between two black parts get a groove too, floor 0.4 below the lower
+  part. Trace the left line and mirror the finished polygons. Where a groove runs off the
+  silhouette, empty its end cap (`groove` in the Epiq car.py returns it) or a body-color
+  crumb is left at the edge. Save a picture of the grooves over the photo as
+  `out/grooves.png` for the hand-over.
 - Black areas must not be flat. Give grilles and valances their real structure with
   0.4 to 1 mm steps (slot, panel, mesh, intake) and make meshes see-through: for a
   honeycomb grille, wide flat hexagon cells about 2.5 x 0.9 mm with 0.4 mm webs, rows
