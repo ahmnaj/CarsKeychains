@@ -3,7 +3,7 @@
 Traced from the owner's straight-on photo (640x480 px, izmocars). Coordinates
 below are photo pixels: the silhouette comes from a scan of the white
 background, details from zoomed grids. The car is symmetric about x=318 px and
-550 px wide, scaled to a 62.5 mm face. Keychain runs from the hood (cut above
+550 px wide, scaled to a 65 mm face. Keychain runs from the hood (cut above
 the headlights) down to the bottom of the bumper; wheels, mirrors and the
 windscreen are left off as on the other cars.
 
@@ -18,7 +18,7 @@ from keychain.parts import (BADGE_RECESS, BASE_TOP, RING_HOLE_R, RING_NECK_FILLE
                             SURFACE, circle, layer)  # noqa: E402
 
 CX, BOT = 318.0, 403.0          # symmetry axis and bumper bottom (px)
-S = 62.5 / 550.0                # mm per photo pixel
+S = 65.0 / 550.0                # mm per photo pixel: 65 mm face + 5 mm tab = 70 mm
 
 
 def mm(pts):
@@ -80,7 +80,6 @@ GROOVE_W = 3.5
 LINES = {   # each runs through to the silhouette edge or into the headlight housing
     "hood shut line": [(145.5, 219.5)] + SHUT_LINE,
     "hood-fender line": [(79.5, 163), (76.5, 171), (74.5, 173.5), (73.7, 179), (73.2, 188.5)],
-    "fender line": [(74, 174), (70, 175.6), (66, 177.3), (64.5, 178), (59, 180.5)],
     "fender-bumper seam": [(41, 235), (46.5, 231.6), (51, 228.5), (56, 225.8), (60, 224),
                            (64.5, 222.8), (67.5, 222.3)],
 }
@@ -141,25 +140,33 @@ def groove(line, outline_px):
     return poly
 
 
-def ring_tab(side_x, hy, offset=3.6):
-    """Keyring tab on the left with R4 end and R3.5 fillets into the body side."""
+def ring_tab(side_x, hy, offset=1.0):
+    """Keyring tab on the left: R4 end, R3.5 fillets blending into the body side.
+
+    The hole centre sits only `offset` mm outside the body edge, so the hole bites
+    into the car and the tab reads as part of it.
+    """
     r, f, hx = RING_TAB_R, RING_NECK_FILLET, side_x - offset
-    pts = [[side_x + 1.5, hy + r + f]]
-    pts += [[side_x - f + f * math.cos(math.radians(-a)), hy + r + f + f * math.sin(math.radians(-a))]
-            for a in range(0, 91, 10)]
-    pts += [[hx + r * math.cos(math.radians(a)), hy + r * math.sin(math.radians(a))] for a in range(90, 271, 6)]
-    pts += [[side_x - f + f * math.cos(math.radians(a)), hy - r - f + f * math.sin(math.radians(a))]
-            for a in range(90, -1, -10)]
-    pts += [[side_x + 1.5, hy - r - f]]
+    cx = side_x - f                                   # fillet centres
+    dy = math.sqrt((r + f) ** 2 - (cx - hx) ** 2)
+    t = math.degrees(math.atan2(dy, cx - hx))         # where fillet meets the R4 end
+    arc_pts = lambda ox, oy, rad, a0, a1, n=12: [
+        [ox + rad * math.cos(math.radians(a0 + (a1 - a0) * i / n)),
+         oy + rad * math.sin(math.radians(a0 + (a1 - a0) * i / n))] for i in range(n + 1)]
+    pts = [[side_x + 1.5, hy + dy]]
+    pts += arc_pts(cx, hy + dy, f, 0, t - 180)        # upper fillet
+    pts += arc_pts(hx, hy, r, t, 360 - t, 40)[1:]     # rounded end
+    pts += arc_pts(cx, hy - dy, f, 180 - t, 0)[1:]    # lower fillet
+    pts += [[side_x + 1.5, hy - dy]]
     return pts, circle(hx, hy, RING_HOLE_R)
 
 
 def spec():
     outline = sym(SILHOUETTE)
 
-    # keyring tab: hole 3.6 mm outside the straight side, at 53% of the height
+    # keyring tab: hole centre 1.0 mm outside the straight side, at 50% of the height
     top = min(y for _, y in SILHOUETTE)
-    tab, tab_hole = ring_tab((42.5 - CX) * S, 0.53 * (BOT - top) * S)
+    tab, tab_hole = ring_tab((42.5 - CX) * S, 0.50 * (BOT - top) * S)
 
     # hood stops at the upper edge of the shut-line groove
     hood = sym(SILHOUETTE[-1:-8:-1] + [(58.5, 186)] + HL_TOP + [(x, y - GROOVE_W / 2) for x, y in SHUT_LINE])
@@ -238,6 +245,7 @@ def spec():
         layer("Indicator L", "orange", 2.5, SURFACE, amber_l),
         layer("Indicator R", "orange", 2.5, SURFACE, amber_r),
         *[layer(f"Panel line {n} (gap)", "void", 2.5, 4.0, g) for n, g in gaps],
+        layer("Keyring hole", "void", 0, 4.0, tab_hole),   # through tab, backing and body edge
     ]
     colors = {"black": [0.02, 0.02, 0.02], "body_blue": [0.2, 0.36, 0.55],
               "white": [0.961, 0.961, 0.961], "orange": [0.867, 0.486, 0.059]}

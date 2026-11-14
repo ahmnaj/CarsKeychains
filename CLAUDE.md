@@ -69,6 +69,9 @@ is complete and follows the same rules (base 1.5, parts from 1.5, bumper 3.6, Ø
   where it meets the body, same height as the main face (3.0; 3.4 on the Ioniq). Hole
   center about 3 to 3.6 mm outside the body edge, at 50 to 56% of the car's height,
   where the side of the car is straight.
+  On new cars the owner wants the tab pulled in so it feels part of the car: hole center
+  only about 1 mm outside the body edge, so the hole bites about 1 mm into the body
+  (Mazda 3). Widen the car face to keep the total at about 70 mm.
 - Simplification: headlights become black housings with colored inlays and see-through
   eyes; grilles become black recesses with chrome or body-color bars or a mesh; bull bars
   and bumpers are the tallest parts.
