@@ -20,7 +20,7 @@ pip install -r requirements.txt   # CadQuery; takes ~10 min on a fresh cloud mac
 - `tools/preview.py <step> <png>` – top-down color render. Always look at it before handing files over.
 - `tools/height_view.py <step> <png>` – same view with height as brightness and black drawn in grey; the only way to see steps inside black areas (grilles, valances).
 - `tools/photo_grid.py <photo> <png> x0 y0 x1 y1 [scale] [grid] [gamma]` – zoomed crop of a photo with a pixel grid, for measuring; gamma 0.4 brightens shadows.
-- `tools/overlay.py <car.py> <photo> <png> [x0 y0 x1 y1]` – draws the car's polygons over its photo to check the trace.
+- `tools/overlay.py <car.py> <photo> <png> [x0 y0 x1 y1]` – draws the car's polygons over its photo to check the trace (5x enlarged; give a box for big photos). Save the full-face overlay as `out/overlay.png` for the hand-over.
 - `cars/<car>/` – one folder per car: `spec.json` or `car.py`, plus `out/`.
 
 ## Spec format
@@ -39,6 +39,10 @@ A `car.py` must define `spec()` returning this dict; build it with helpers from 
 `cars/mazda3_2012/car.py` is the authored example: it traces in photo pixels (`S`, `CX`,
 `BOT` convert to mm) and has reusable helpers for smoothing (`finish`), panel-line grooves
 (`groove`, `stroke`) and honeycomb mesh (`honeycomb`). Copy them for the next car.
+`cars/skoda_epiq_2026/car.py` is the second one (black car, 1611x2000 photo): it adds `sunk()`
+(a black area plus the void over it), vertical grille fins with see-through slots, and folds
+made by a void over the body color. On a black car the painted body stays its own part
+(`body_black`) so the owner can give it its own filament.
 
 ## House style
 

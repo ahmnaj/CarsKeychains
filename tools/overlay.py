@@ -21,16 +21,21 @@ def main(car_py, photo, out, box=None, k=5):
     mod_spec.loader.exec_module(car)
     spec = car.spec()
     im = Image.open(photo).convert("RGB")
+    ox, oy = 0, 0
+    if box:                                   # crop first: big photos do not fit enlarged
+        box = tuple(int(v) for v in box)
+        ox, oy = box[0], box[1]
+        im = im.crop(box)
+    elif im.width > 1200:
+        k = 2
     im = im.resize((im.width * k, im.height * k), Image.LANCZOS)
     draw = ImageDraw.Draw(im)
     color = {name: COLORS[i % len(COLORS)] for i, name in enumerate(spec["colors"])}
     color["void"] = (255, 255, 0)
     for layer in spec["layers"]:
         for poly in [layer["outline"]] + layer["holes"]:
-            pts = [((x / car.S + car.CX) * k, (car.BOT - y / car.S) * k) for x, y in poly]
+            pts = [((x / car.S + car.CX - ox) * k, (car.BOT - y / car.S - oy) * k) for x, y in poly]
             draw.line(pts + [pts[0]], fill=color[layer["color"]], width=1)
-    if box:
-        im = im.crop(tuple(int(v) * k for v in box))
     im.save(out)
 
 
