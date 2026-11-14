@@ -155,36 +155,68 @@ PANEL_BOTTOM = [(148, 307.5), (160, 313.5), (175, 319.5), (200, 328), (220, 333.
 MESH_BOTTOM = CREASE + [(176, 358)] + GRILLE_BOTTOM
 
 
-# gentle smile the slats follow: the grille's lower edge, carried on out to the sides
-SLAT_CURVE = [(130, 349.5)] + GRILLE_BOTTOM
+# gentle smile the mesh rows follow: the grille's lower edge, carried on out to the sides
+ROW_CURVE = [(130, 349.5)] + GRILLE_BOTTOM
 
 
-def mesh_slits(pitch=9.5, gap=5.0, wave=1.5, period=24.0):
-    """Wavy horizontal slats of the grille mesh, as see-through gaps between them.
+def edge_dist(p, poly):
+    best = 1e9
+    for (ax, ay), (bx, by) in zip(poly, poly[1:] + poly[:1]):
+        dx, dy = bx - ax, by - ay
+        t = max(0.0, min(1.0, ((p[0] - ax) * dx + (p[1] - ay) * dy) / ((dx * dx + dy * dy) or 1e-12)))
+        best = min(best, math.hypot(p[0] - ax - t * dx, p[1] - ay - t * dy))
+    return best
 
-    Rows are parallel smile curves, 0.57 mm gaps and 0.51 mm slats, filling the mesh
-    around the smooth panel; solid ribs stay at the centre and at the two radiator
-    supports. Returns mm polygons (left and right).
+
+def area(poly):
+    return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]))) / 2
+
+
+def honeycomb(region, curve=None, x_mid=CX, a=12.0, t=5.0, h=8.0, wy=2.0, gx=3.1):
+    """See-through honeycomb of wide flat hexagons, like the car's grille mesh.
+
+    Cells are 2.5 x 0.9 mm with 0.4 mm webs, interlocked row to row, and are trimmed by
+    `region` (px polygon, already inset by the frame width) the way the real mesh is cut
+    off by its frame. `curve` bends the rows (px points, left half; mirrored about CX).
+    Returns mm polygons.
     """
-    ribs = [(218, 4.0), (CX, 4.5)]
+    w = a + 2 * t
+    px_pitch, py_pitch = w + a + 2 * gx, h / 2 + wy
+    xs = [q[0] for q in region]
+    ys = [q[1] for q in region]
+    bend = (lambda x: interp(curve, CX - abs(x - CX)) - curve[-1][1]) if curve else (lambda x: 0.0)
+    cells = []
+    for r in range(-40, 41):
+        for n in range(-12, 13):
+            cx = x_mid + (n + (0.5 if r % 2 else 0.0)) * px_pitch
+            cy = max(ys) - h / 2 + r * py_pitch
+            if not (min(xs) - w < cx < max(xs) + w):
+                continue
+            hexa = [(cx - w / 2, cy), (cx - a / 2, cy - h / 2), (cx + a / 2, cy - h / 2),
+                    (cx + w / 2, cy), (cx + a / 2, cy + h / 2), (cx - a / 2, cy + h / 2)]
+            hexa = [(x, y + bend(x)) for x, y in hexa]
+            centre = (cx, cy + bend(cx))
+            cell = list(region)                  # region clipped by the (convex) hexagon
+            for p0, p1 in zip(hexa, hexa[1:] + hexa[:1]):
+                cell = clip_half(cell, p0, p1, centre) if cell else cell
+            if len(cell) < 3 or area(cell) < 0.3 * area(hexa):
+                continue                          # drop slivers too small to print
+            cy_s = [q[1] for q in cell]
+            cx_s = [q[0] for q in cell]
+            if max(cy_s) - min(cy_s) < 3.5 or max(cx_s) - min(cx_s) < 5:
+                continue
+            cells.append(mm(cell))
+    return cells
+
+
+def shrink(poly, d):
+    """Rough inset of a compact polygon: pull every vertex d px towards the centroid."""
+    cx = sum(p[0] for p in poly) / len(poly)
+    cy = sum(p[1] for p in poly) / len(poly)
     out = []
-    for k in range(9):
-        run = []
-        for i in range(int((CX - 138) / 1.5) + 2):
-            x = 138 + 1.5 * i
-            yc = interp(SLAT_CURVE, x) - 10.0 - k * pitch + wave * math.sin(2 * math.pi * x / period)
-            top, bot = yc - gap / 2, yc + gap / 2
-            ok = (x <= CX
-                  and bot <= min(interp(MESH_BOTTOM, x), interp(MESH_BOTTOM, x - 5)) - 4.5   # grille edge
-                  and top >= (interp(PANEL_BOTTOM, x) + 3.5 if x >= 148 else 312)             # panel
-                  and all(abs(x - rx) > rw for rx, rw in ribs))
-            if ok:
-                run.append((x, yc))
-            elif run:
-                if run[-1][0] - run[0][0] >= 12:
-                    poly = [(px, py - gap / 2) for px, py in run] + [(px, py + gap / 2) for px, py in run[::-1]]
-                    out += list(pair(poly))
-                run = []
+    for x, y in poly:
+        n = math.hypot(x - cx, y - cy) or 1.0
+        out.append((x - (x - cx) / n * d, y - (y - cy) / n * d))
     return out
 
 
@@ -216,13 +248,22 @@ def spec():
     fog_l, fog_r = pair(fog_px)
 
     grille = sym(GRILLE_TOP + [(140, 272.5), (137, 278)] + CREASE + [(176, 358)] + GRILLE_BOTTOM)
-    # grille details (from the brightened photo): a dark slot along the top, the smooth
-    # smile-shaped panel under it, and the open mesh below with the radiator fins showing
+    # grille details: a dark slot along the top, the smooth smile-shaped panel under it,
+    # and the honeycomb mesh below (owner's close-up photo of the real car)
     grille_slot = sym([(318, 278.5), (270, 277.5), (195, 276), (146, 274), (142, 276), (141.5, 282),
                        (143, 287.5), (200, 288.5), (318, 290)])
     grille_panel = sym([(318, 290), (200, 288.5), (143, 287.5), (144, 298), (148, 307.5), (160, 313.5),
                         *PANEL_BOTTOM[2:]])
-    mesh = mesh_slits()                                  # see-through gaps between the wavy slats
+    # honeycomb mesh (see-through cells) below and beside the panel, and in the fog vents
+    px_sym = lambda path: path + flip(path)[1:-1]
+    # open mesh area of the grille, inset 0.45 mm from the panel above and the frame below
+    mesh_area = px_sym([(318, 342.8), (295, 340.8), (258, 339.8), (220, 337.3), (200, 331.8),
+                        (175, 323.3), (160, 317.3), (152, 313), (156.5, 325), (165.5, 340),
+                        (174.5, 352), (180, 357.5), (182, 359), (195, 362), (220, 366),
+                        (245, 368.5), (270, 371), (295, 373), (318, 374)])
+    mesh = honeycomb(mesh_area, curve=ROW_CURVE)
+    fog_area = shrink(fog_px, 5.0)
+    mesh += honeycomb(fog_area, x_mid=86) + honeycomb(flip(fog_area), x_mid=2 * CX - 86)
     lip = sym([(318, 270), (200, 267.5), (146, 266), (140, 268), (140, 272.5)] + GRILLE_TOP[::-1])
     chin = sym(GRILLE_BOTTOM[::-1] + [(177, 361.5)] + FOG_BOTTOM + [(57, 368)] + CHIN_BOTTOM[::-1])
     # lower bumper is body color; black corner slots (chrome-edged) and a slim centre intake
@@ -278,7 +319,7 @@ def spec():
         layer("Indicator L", "orange", 2.5, SURFACE, amber_l),
         layer("Indicator R", "orange", 2.5, SURFACE, amber_r),
         *[layer(f"Panel line {n} (gap)", "void", 2.5, 4.0, g) for n, g in gaps],
-        *[layer("Grille mesh gap", "void", 0, 4.0, m) for m in mesh],
+        *[layer("Mesh cell", "void", 0, 4.0, m) for m in mesh],
     ]
     colors = {"black": [0.02, 0.02, 0.02], "body_blue": [0.2, 0.36, 0.55],
               "white": [0.961, 0.961, 0.961], "orange": [0.867, 0.486, 0.059]}
