@@ -9,17 +9,17 @@ wheels, mirrors and the windscreen are left off as on the other cars.
 
 The painted body is its own part ("body_black") so it can get its own black filament; the
 unpainted trim (Tech-Deck face, band between the headlights, grille, splitter) belongs to
-the black base part. Panel lines (hood shut line, fender-bumper
-seams, the crease across the lower bumper, the bumper-lip seams, the joints in the grille
+the black base part. Panel lines (hood shut line, the crease across the lower bumper, the bumper-lip seams, the joints in the grille
 frame and the seam between light strip and gloss panel) are 0.40 mm grooves. So are the sharp
-creases: hood centre, under the light strips, bumper corners, and headlight tip to tip. The SKODA lettering is left as a blank badge (0.3 below the hood).
+creases: hood centre, under the light strips, bumper corners, and headlight tip to tip. The hood is left flat where the
+SKODA lettering is (no badge, at the owner's request).
 """
 import math
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from keychain.parts import BADGE_RECESS, BASE_TOP, SURFACE, keyring_tab_ref, layer, rounded_rect  # noqa: E402
+from keychain.parts import BASE_TOP, SURFACE, keyring_tab_ref, layer, rounded_rect  # noqa: E402
 
 CX, BOT = 805.25, 1378.0        # symmetry axis and lowest point of the splitter (px)
 S = 62.5 / 1297.0               # mm per photo pixel
@@ -259,8 +259,6 @@ SHUT = [(199, 845), (202.6, 850), (205.8, 855), (209, 860), (213, 863.7), (225, 
         (300, 884), (330, 887), (360, 890), (390, 893), (420, 895), (450, 897), (510, 900),
         (570, 901.5), (630, 903), (660, 904.5), (675, 907.5), (690, 914.5), (705, 921.5),
         (720, 923), (CX, 924)]
-FENDER_BUMPER = [(211, 863), (207, 868), (200, 879), (190, 891.7), (180, 905), (171.7, 918),
-                 (165.8, 928), (158, 941)]
 # crease across the whole lower bumper, from side to side
 CREASE = [(146, 1278.5), (160, 1283.5), (173.7, 1288.7), (190, 1295), (210, 1299), (230, 1303),
           (250, 1306), (270, 1310), (290, 1312.5), (310, 1315), (330, 1318), (370, 1323),
@@ -285,7 +283,7 @@ DOME_EDGE = [(675.3, TOP)] + HOOD_CREASE[2:-1]
 
 # (line, depth of its floor, runs across the centre)
 LINES = {"hood shut line": (SHUT, 2.5, True), 
-         "fender-bumper seam": (FENDER_BUMPER, 2.5, False), "lower bumper crease": (CREASE, 2.5, True),
+         "lower bumper crease": (CREASE, 2.5, True),
          "grille frame joint": (FRAME_JOINT, 2.5, False),
          "light strip seam": (LAMP_SEAM, 2.0, False),
          "hood centre crease": (HOOD_CREASE, 2.5, False), "crease under light strip": (UNDER_STRIP, 2.5, False),
@@ -347,7 +345,6 @@ SLOT = [(CX, 1340), (470, 1338), (420, 1336), (380, 1333), (340, 1327), (300, 13
 SLOT_POSTS = [457, 633, CX]                 # dividers in the valance slot (and mirrored)
 BAR_C = [(CX, 1359.5), (400, 1359.5), (340, 1358.5), (300, 1355.5), (260, 1353.5), (225, 1356.5)]
 RECESS = [(CX, 1359.5), (412, 1359.5), (401, 1367.5), (CX, 1367.5)]   # dark band in the splitter
-BADGE = (722, 886, 909.5)                   # blank badge for the lettering: x0, y0, y1
 
 
 def grille_top(x):
@@ -428,15 +425,13 @@ def spec():
     # folds in the body color, 0.2 mm below the face: the sides of the bumper beside the air
     # curtains, and the lower lip under the bumper-lip seam and the grille (it runs on under
     # the valance and splitter, which are laid over it afterwards)
-    side_px = [(140, 960), (150, 938), (165.8, 928), (171.7, 918), (180, 905), (190, 891.7),
-               (200, 879), (201, 900), (200, 945), (199, 1000), (198, 1058), (196, 1100),
+    # (the owner wants the corner above the headlight flat: no fender seam, no step there)
+    side_px = [(140, 994), (199, 994), (198, 1058), (196, 1100),
                (198, 1200), (203, 1240), (207, 1250), (140, 1250)]
     lower = sym([(CX, 1314)] + [(x, y - 3) for x, y in GRILLE_BOTTOM[-2::-1]] +
                 [(291.5, 1274.3), (262, 1269.5), (240, 1265), (225, 1259.5), (213, 1253),
                  (203, 1245), (135, 1245), (135, 1357), (172, 1349.5), (220, 1352), (260, 1348),
                  (300, 1350), (CX, 1356)])
-    x0, y0, y1 = BADGE
-    badge = mm(box(x0, y0, 2 * CX - x0, y1, 6))
 
     # panel lines: a black floor plus a void above it, so the body is cut clean through and
     # splits into separate pieces along each line. Every line runs through to the silhouette
@@ -496,7 +491,6 @@ def spec():
         layer("Splitter upper bar", "black", 0, SURFACE, bar_c),
         *[layer("Valance slot post", "black", 0, 2.8, q) for q in posts],
         layer("Splitter band", "void", 2.4, 4.0, recess),
-        *sunk("Blank lettering badge", 3.4 - BADGE_RECESS, badge),
         *[layer(f"Panel line {n} (gap)", "void", z, 4.0, g) for n, z, g in gaps],
         # the headlights go in after the grooves: the crease between them ends inside the glass
         layer("Headlight L (space)", "void", 2.8, 4.0, hl_l),
@@ -505,7 +499,8 @@ def spec():
         layer("Headlight glass R", "dark_grey", BASE_TOP, 2.8, hl_r),
         *[layer("Light strip LED", "white", 2.0, SURFACE, p) for p in leds],
         *[layer("Grille opening", "void", 0, 4.0, s) for s in slots],
-        *[layer("Headlight lens", "void", 0, 4.0, e) for e in eyes],
+        # lens modules: white inlays flush with the glass (the owner did not want them see-through)
+        *[layer("Headlight lens", "white", BASE_TOP, 2.8, e) for e in eyes],
     ]
     colors = {"black": [0.02, 0.02, 0.02], "body_black": [0.13, 0.14, 0.16],
               "dark_grey": [0.271, 0.271, 0.271], "white": [0.961, 0.961, 0.961]}
