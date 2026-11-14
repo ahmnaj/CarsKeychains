@@ -18,6 +18,9 @@ pip install -r requirements.txt   # CadQuery; takes ~10 min on a fresh cloud mac
 - `tools/build.py <spec.json|car.py>` – build a car into `cars/<car>/out/` (STEP, one STL per color, `preview.png`).
 - `tools/extract_spec.py <in.stp> <out.json> --name <car>` – convert another Inventor STEP from the owner into a spec.
 - `tools/preview.py <step> <png>` – top-down color render. Always look at it before handing files over.
+- `tools/height_view.py <step> <png>` – same view with height as brightness and black drawn in grey; the only way to see steps inside black areas (grilles, valances).
+- `tools/photo_grid.py <photo> <png> x0 y0 x1 y1 [scale] [grid] [gamma]` – zoomed crop of a photo with a pixel grid, for measuring; gamma 0.4 brightens shadows.
+- `tools/overlay.py <car.py> <photo> <png> [x0 y0 x1 y1]` – draws the car's polygons over its photo to check the trace.
 - `cars/<car>/` – one folder per car: `spec.json` or `car.py`, plus `out/`.
 
 ## Spec format
@@ -28,7 +31,14 @@ order like paint: each layer carves its volume out of every earlier layer of ano
 color. So: put the black backing first, then body paint, then inlays and trim.
 A layer with color `"void"` is empty space: it carves every earlier layer of any color
 and adds no part (use it for grooves and openings that must cut through stacked layers).
+Carving is by volume only: a black layer 0 to 2.0 under a 3.0 body removes the body up to
+2.0 and leaves blue above it. So everything lower than the surface around it needs either
+a hole in each body-color layer over it, or a `"void"` layer above it. Prefer the void;
+holes that touch the outline or each other, or cross a layer's edge, break the booleans.
 A `car.py` must define `spec()` returning this dict; build it with helpers from `keychain/parts.py`.
+`cars/mazda3_2012/car.py` is the authored example: it traces in photo pixels (`S`, `CX`,
+`BOT` convert to mm) and has reusable helpers for smoothing (`finish`), panel-line grooves
+(`groove`, `stroke`) and honeycomb mesh (`honeycomb`). Copy them for the next car.
 
 ## House style
 
@@ -81,15 +91,64 @@ is complete and follows the same rules (base 1.5, parts from 1.5, bumper 3.6, Ø
 - The license plate is not modeled: the owner adds it from a Bambu Studio template.
 - Smallest features: about 0.4 mm slots and 0.5 mm wide trim lines.
 
+## What the owner expects (learned on the Mazda 3)
+
+The owner checks every detail against the photo and sends it back until it matches. These
+rules come from that review; follow them from the first version.
+
+- Accuracy over speed. Never eyeball a shape. Measure it (see Tracing), and show the
+  overlay on the photo with the hand-over. The silhouette matters most.
+- Extent: from the hood, cut a little above the headlights, down to the bottom of the
+  bumper. No wheels, mirrors, windscreen or roof.
+- Panel lines are wanted: hood shut line, hood-fender lines, fender-bumper seams. Make
+  them 0.40 mm grooves (not thicker) centered on the darkest pixels of the seam: black
+  floor at 2.5 plus a void above. Run each one right through to the silhouette edge or
+  into the part it meets, so the body-color part splits into separate pieces along it; a
+  groove that stops short or sits under a raised layer reads as a stroke drawn on top.
+  Only real seams get a groove. A fold in a surface (light/dark boundary, no gap) is a
+  0.2 mm height step instead. Do not add lines the car does not have.
+- Black areas must not be flat. Give grilles and valances their real structure with
+  0.4 to 1 mm steps (slot, panel, mesh, intake) and make meshes see-through: for a
+  honeycomb grille, wide flat hexagon cells about 2.5 x 0.9 mm with 0.4 mm webs, rows
+  following the grille's curve, trimmed by the frame like the real mesh. Do not invent a
+  pattern (slits, wavy slats): if the photo is too dark to show the mesh, ask the owner
+  for a close-up.
+- Dark is not always black. Brighten the photo before deciding: on the Mazda the lower
+  bumper looked black but was body color with small black openings. Body color should
+  flow unbroken where it does on the car (lips, corners); do not let black cut it.
+- The bottom edge is rarely a straight line. Trace the lower bumper like the rest.
+- Curves must be smooth, not faceted: run every traced polygon through the smoothing
+  (`finish` in the Mazda car.py), which keeps the traced points and real corners. Check
+  that the silhouette moved less than 0.1 mm and the bounding box did not change.
+- Keyring tab exactly as on the references (see House style); do not move it into the body.
+
+## Tracing a photo
+
+1. Save the photo in `reference/` and work in its pixel coordinates.
+2. Silhouette: scan each row for the first and last non-background pixel; this also gives
+   the symmetry axis and the scale (car face = 62.5 mm).
+3. Details: `tools/photo_grid.py` at 4x to 8x, also with gamma 0.4 for dark areas. For a
+   thin dark line, take the darkest pixel across it every few px rather than reading it
+   off the grid.
+4. Trace the left half and mirror it. Keep each shared edge as one named point list and
+   build the neighbouring polygons from that same list, so parts meet exactly.
+5. After every build run `tools/overlay.py` and compare; fix anything more than about
+   1 px off. Then look at `preview.png` and `tools/height_view.py`.
+6. Before hand-over check every body: valid, the expected number of separate solids, and
+   no slivers (solids under about 0.1 mm3), and that no part pokes outside the silhouette
+   (compare bounding boxes). A void may overrun the outline; a black floor may not.
+
 ## Making a new car
 
 1. Get a straight-on front photo (or SVG/DXF outlines) from the owner. Do not invent
    a car's face from memory; ask for a reference.
 2. Write `cars/<car>/car.py`: silhouette and keyring tab, then body, pockets, inlays and
    trim, following the house style above. Scale it so the keychain is about 70 mm wide
-   including the tab. `cars/` has five rebuilt examples to copy patterns from.
-3. Run `python tools/build.py cars/<car>/car.py`, look at `out/preview.png`, compare it
-   with the photo and iterate.
+   including the tab. `cars/mazda3_2012/car.py` is the pattern to copy; the other five
+   folders are specs extracted from the owner's own models (see Tracing a photo and
+   What the owner expects).
+3. Run `python tools/build.py cars/<car>/car.py`, look at `out/preview.png` and the
+   overlay on the photo, and iterate until they match.
 4. Leave the logo as a blank badge (see House style).
 5. Commit the car folder including `out/` so the owner can download the files from GitHub.
 
