@@ -3,7 +3,7 @@
 Traced from the owner's straight-on photo (640x480 px, izmocars). Coordinates
 below are photo pixels: the silhouette comes from a scan of the white
 background, details from zoomed grids. The car is symmetric about x=318 px and
-550 px wide, scaled to a 65 mm face. Keychain runs from the hood (cut above
+550 px wide, scaled to a 62.5 mm face. Keychain runs from the hood (cut above
 the headlights) down to the bottom of the bumper; wheels, mirrors and the
 windscreen are left off as on the other cars.
 
@@ -14,11 +14,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from keychain.parts import (BADGE_RECESS, BASE_TOP, RING_HOLE_R, RING_NECK_FILLET, RING_TAB_R,
-                            SURFACE, circle, layer)  # noqa: E402
+from keychain.parts import BADGE_RECESS, BASE_TOP, SURFACE, keyring_tab_ref, layer  # noqa: E402
 
 CX, BOT = 318.0, 403.0          # symmetry axis and bumper bottom (px)
-S = 65.0 / 550.0                # mm per photo pixel: 65 mm face + 5 mm tab = 70 mm
+S = 62.5 / 550.0                # mm per photo pixel
 
 
 def mm(pts):
@@ -140,33 +139,12 @@ def groove(line, outline_px):
     return poly
 
 
-def ring_tab(side_x, hy, offset=1.0):
-    """Keyring tab on the left: R4 end, R3.5 fillets blending into the body side.
-
-    The hole centre sits only `offset` mm outside the body edge, so the hole bites
-    into the car and the tab reads as part of it.
-    """
-    r, f, hx = RING_TAB_R, RING_NECK_FILLET, side_x - offset
-    cx = side_x - f                                   # fillet centres
-    dy = math.sqrt((r + f) ** 2 - (cx - hx) ** 2)
-    t = math.degrees(math.atan2(dy, cx - hx))         # where fillet meets the R4 end
-    arc_pts = lambda ox, oy, rad, a0, a1, n=12: [
-        [ox + rad * math.cos(math.radians(a0 + (a1 - a0) * i / n)),
-         oy + rad * math.sin(math.radians(a0 + (a1 - a0) * i / n))] for i in range(n + 1)]
-    pts = [[side_x + 1.5, hy + dy]]
-    pts += arc_pts(cx, hy + dy, f, 0, t - 180)        # upper fillet
-    pts += arc_pts(hx, hy, r, t, 360 - t, 40)[1:]     # rounded end
-    pts += arc_pts(cx, hy - dy, f, 180 - t, 0)[1:]    # lower fillet
-    pts += [[side_x + 1.5, hy - dy]]
-    return pts, circle(hx, hy, RING_HOLE_R)
-
-
 def spec():
     outline = sym(SILHOUETTE)
 
-    # keyring tab: hole centre 1.0 mm outside the straight side, at 50% of the height
+    # keyring tab as on the reference models, hole at 53% of the height
     top = min(y for _, y in SILHOUETTE)
-    tab, tab_hole = ring_tab((42.5 - CX) * S, 0.50 * (BOT - top) * S)
+    tab, tab_hole, tab_fillets = keyring_tab_ref((42.5 - CX) * S, 0.53 * (BOT - top) * S, outline)
 
     # hood stops at the upper edge of the shut-line groove
     hood = sym(SILHOUETTE[-1:-8:-1] + [(58.5, 186)] + HL_TOP + [(x, y - GROOVE_W / 2) for x, y in SHUT_LINE])
@@ -189,8 +167,15 @@ def spec():
     fog_l, fog_r = pair(fog_px)
 
     grille = sym(GRILLE_TOP + [(140, 272.5), (137, 278)] + CREASE + [(176, 358)] + GRILLE_BOTTOM)
-    # smooth upper panel of the grille sits higher than the mesh below it
-    grille_panel = sym(GRILLE_TOP + [(140, 272.5), (137, 278)] + CREASE[:3] + [(150, 320), (200, 321.5), (318, 322)])
+    # grille details (from the brightened photo): a dark slot along the top, the smooth
+    # smile-shaped panel under it, and the open mesh below with the radiator fins showing
+    grille_slot = sym([(318, 278.5), (270, 277.5), (195, 276), (146, 274), (142, 276), (141.5, 282),
+                       (143, 287.5), (200, 288.5), (318, 290)])
+    grille_panel = sym([(318, 290), (200, 288.5), (143, 287.5), (144, 298), (148, 307.5), (160, 313.5),
+                        (175, 319.5), (200, 328), (220, 333.5), (258, 336), (318, 337)])
+    fins = []                                            # see-through slits between the fins
+    for x0, x1, y0, y1 in ((234, 311, 343, 349.5), (234, 311, 354.5, 361), (270, 311, 365.5, 370.5)):
+        fins += list(pair([(x0, y0), (x1, y0), (x1, y1), (x0, y1)]))
     lip = sym([(318, 270), (200, 267.5), (146, 266), (140, 268), (140, 272.5)] + GRILLE_TOP[::-1])
     chin = sym(GRILLE_BOTTOM[::-1] + [(177, 361.5)] + FOG_BOTTOM + [(57, 368)] + CHIN_BOTTOM[::-1])
     # lower bumper is body color; black corner slots (chrome-edged) and a slim centre intake
@@ -221,6 +206,7 @@ def spec():
     layers = [
         layer("Backing", "black", 0, BASE_TOP, outline, holes=[eye_l, eye_r]),
         layer("Keyring tab", "black", 0, SURFACE, tab, holes=[tab_hole]),
+        *[layer("Keyring tab fillet", "black", 0, BASE_TOP, f) for f in tab_fillets],
         layer("Body", "body_blue", BASE_TOP, SURFACE, outline, holes=pockets),
         layer("Hood", "body_blue", BASE_TOP, 3.2, hood),
         layer("Bumper lip over grille", "body_blue", BASE_TOP, 3.2, lip),
@@ -231,8 +217,8 @@ def spec():
         layer("Headlight housing R", "black", 0, 2.5, hl_r, holes=[eye_r]),
         layer("Fog vent L", "black", 0, 2.0, fog_l),
         layer("Fog vent R", "black", 0, 2.0, fog_r),
-        layer("Grille mesh", "black", 0, 2.0, grille),
-        layer("Grille upper panel", "black", 0, 2.5, grille_panel),
+        layer("Grille mesh", "black", 0, 2.0, grille, holes=[grille_slot]),
+        layer("Grille panel", "black", 0, 2.6, grille_panel),
         layer("Lower corner slot L", "black", 0, 2.0, slot_l),
         layer("Lower corner slot R", "black", 0, 2.0, slot_r),
         layer("Lower intake", "black", 0, 2.0, intake),
@@ -245,7 +231,7 @@ def spec():
         layer("Indicator L", "orange", 2.5, SURFACE, amber_l),
         layer("Indicator R", "orange", 2.5, SURFACE, amber_r),
         *[layer(f"Panel line {n} (gap)", "void", 2.5, 4.0, g) for n, g in gaps],
-        layer("Keyring hole", "void", 0, 4.0, tab_hole),   # through tab, backing and body edge
+        *[layer("Radiator fin slit", "void", 0, 4.0, f) for f in fins],
     ]
     colors = {"black": [0.02, 0.02, 0.02], "body_blue": [0.2, 0.36, 0.55],
               "white": [0.961, 0.961, 0.961], "orange": [0.867, 0.486, 0.059]}

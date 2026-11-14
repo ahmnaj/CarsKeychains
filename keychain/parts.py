@@ -57,5 +57,50 @@ def keyring_tab(hole_x, hole_y, attach_x):
     return pts, circle(hole_x, hole_y, RING_HOLE_R)
 
 
+def keyring_tab_ref(side_x, hole_y, outline, hole_offset=3.4):
+    """Keyring tab exactly as on the owner's reference models (left side).
+
+    Measured on all five STEP files: an 8 mm tall tab whose outer end has R3.5
+    rounded corners (1 mm flat between them), Ø4 hole 4.0 mm in from that end,
+    full face height. Where the tab meets the car, the 1.5 mm backing plate has
+    concave R3.5 fillets, tangent to the tab edge and to the car's side.
+
+    side_x: x of the car's side at the hole height; outline: silhouette (mm).
+    Returns (tab, hole, [fillet_top, fillet_bottom]): tab goes in a black layer
+    0 to SURFACE with the hole, fillets in black layers 0 to BASE_TOP.
+    """
+    h, rc, f = 4.0, 3.5, RING_NECK_FILLET
+    hx = side_x - hole_offset
+    x0 = hx - 4.0                                        # outer end of the tab
+    arc = lambda cx, cy, r, a0, a1, n=12: [
+        [cx + r * math.cos(math.radians(a0 + (a1 - a0) * i / n)),
+         cy + r * math.sin(math.radians(a0 + (a1 - a0) * i / n))] for i in range(n + 1)]
+    tab = [[side_x + 1.5, hole_y + h]] + arc(x0 + rc, hole_y + h - rc, rc, 90, 180) + \
+        arc(x0 + rc, hole_y - h + rc, rc, 180, 270) + [[side_x + 1.5, hole_y - h]]
+
+    def dist(px, py):                                    # distance to the silhouette
+        best = (1e9, None)
+        for (ax, ay), (bx, by) in zip(outline, outline[1:] + outline[:1]):
+            dx, dy = bx - ax, by - ay
+            t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / ((dx * dx + dy * dy) or 1e-12)))
+            q = (ax + t * dx, ay + t * dy)
+            best = min(best, (math.hypot(px - q[0], py - q[1]), q))
+        return best
+
+    fillets = []
+    for sgn in (1, -1):
+        cy = hole_y + sgn * (h + f)
+        lo, hi = side_x - 2 * f, side_x                  # slide the centre until it touches the side
+        for _ in range(40):
+            mid = (lo + hi) / 2
+            lo, hi = (mid, hi) if dist(mid, cy)[0] > f else (lo, mid)
+        cx, q = lo, dist(lo, cy)[1]
+        a_end = math.degrees(math.atan2(q[1] - cy, q[0] - cx))
+        a_tab = -90 if sgn > 0 else 90
+        fillets.append([[cx, hole_y + sgn * h]] + arc(cx, cy, f, a_tab, a_end)[1:] +
+                       [[q[0] + 1.5, q[1]], [side_x + 1.5, hole_y + sgn * h]])
+    return tab, circle(hx, hole_y, RING_HOLE_R), fillets
+
+
 def layer(name, color, z0, z1, outline, holes=None):
     return {"name": name, "color": color, "z": [z0, z1], "outline": outline, "holes": holes or []}

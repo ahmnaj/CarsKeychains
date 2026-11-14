@@ -65,13 +65,12 @@ is complete and follows the same rules (base 1.5, parts from 1.5, bumper 3.6, Ø
   be glue-ins (the least-used ones).
   Inventor RGB: black 0.02, white 0.961, chrome 0.957, dark grey 0.271, silver 0.6,
   orange (0.867, 0.486, 0.059) or (0.812, 0.31, 0), gold (0.886, 0.863, 0.165).
-- Keyring tab: black, on the left, Ø4.0 hole on every car, R4 rounded end, R3.5 fillets
-  where it meets the body, same height as the main face (3.0; 3.4 on the Ioniq). Hole
-  center about 3 to 3.6 mm outside the body edge, at 50 to 56% of the car's height,
-  where the side of the car is straight.
-  On new cars the owner wants the tab pulled in so it feels part of the car: hole center
-  only about 1 mm outside the body edge, so the hole bites about 1 mm into the body
-  (Mazda 3). Widen the car face to keep the total at about 70 mm.
+- Keyring tab: black, on the left, same on every car (`keyring_tab_ref` in `keychain/parts.py`):
+  8 mm tall, outer end with R3.5 rounded corners (1 mm flat between them), Ø4.0 hole 4.0 mm
+  in from that end, full face height (3.0; 3.4 on the Ioniq). The hole center is 3.2 to
+  3.6 mm outside the body edge, at 50 to 56% of the car's height. Where the tab meets the
+  car, only the 1.5 mm backing has concave R3.5 fillets. The owner rejected a tab pulled
+  into the body; keep it as on the references.
 - Simplification: headlights become black housings with colored inlays and see-through
   eyes; grilles become black recesses with chrome or body-color bars or a mesh; bull bars
   and bumpers are the tallest parts.
