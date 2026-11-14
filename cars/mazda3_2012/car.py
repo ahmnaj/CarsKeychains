@@ -29,14 +29,117 @@ def flip(pts):
     return [(2 * CX - x, y) for x, y in reversed(pts)]
 
 
+class Px(list):
+    """A traced polygon still in photo pixels; spec() smooths it and converts it to mm."""
+
+
 def sym(path):
     """Symmetric outline from its left half: a px path that starts and ends on x=CX."""
     right = flip(path)
-    return mm(path + right[1:-1])
+    return Px(path + right[1:-1])
 
 
 def pair(pts):
-    return mm(pts), mm(flip(pts))
+    return Px(pts), Px(flip(pts))
+
+
+# --- smoothing ---------------------------------------------------------------
+# The traced polygons have a point every few mm, which prints as visible facets. Each edge
+# is replaced by a cubic curve that still passes through every traced point, so shapes and
+# the silhouette stay where they were traced. A vertex stays a sharp corner when the outline
+# turns more than CORNER_DEG there, or when two polygons that share it leave it in different
+# directions; everywhere else all polygons sharing an edge get exactly the same curve.
+CORNER_DEG = 50.0
+SMOOTH_STEP = 2.5        # px between points on a curve (0.28 mm)
+
+
+def _key(p):
+    return (round(p[0], 2), round(p[1], 2))
+
+
+def _unit(ax, ay):
+    n = math.hypot(ax, ay) or 1.0
+    return ax / n, ay / n
+
+
+def vertex_tangents(polys, closed=True):
+    """{vertex: tangent line direction} for every vertex that should be smooth."""
+    seen = {}
+    for poly in polys:
+        n = len(poly)
+        for i, v in enumerate(poly):
+            if not closed and i in (0, n - 1):
+                seen.setdefault(_key(v), set()).add(None)
+                continue
+            a, b = poly[i - 1], poly[(i + 1) % n]
+            seen.setdefault(_key(v), set()).add((frozenset((_key(a), _key(b))), a, b))
+    out = {}
+    for k, uses in seen.items():
+        if len({u[0] if u else None for u in uses}) != 1 or None in uses:
+            continue                                   # polygons disagree here: keep the corner
+        _, a, b = next(iter(uses))
+        d1, d2 = _unit(k[0] - a[0], k[1] - a[1]), _unit(b[0] - k[0], b[1] - k[1])
+        turn = math.degrees(math.acos(max(-1.0, min(1.0, d1[0] * d2[0] + d1[1] * d2[1]))))
+        if turn < CORNER_DEG:
+            # direction of the chord between the neighbours (follows the longer edge, so long
+            # straight runs stay straight), and the shorter edge length to limit the bulge
+            out[k] = _unit(b[0] - a[0], b[1] - a[1]) + (
+                min(math.hypot(k[0] - a[0], k[1] - a[1]), math.hypot(b[0] - k[0], b[1] - k[1])),)
+    return out
+
+
+def smooth_path(poly, tangents, closed=True):
+    """Replace each edge by a cubic through its end points, using the shared vertex tangents."""
+    out = []
+    n = len(poly)
+    for i in range(n if closed else n - 1):
+        a, b = poly[i], poly[(i + 1) % n]
+        ex, ey = b[0] - a[0], b[1] - a[1]
+        length = math.hypot(ex, ey)
+        ta, tb = tangents.get(_key(a)), tangents.get(_key(b))
+        out.append(a)
+        if length < 1e-9 or (ta is None and tb is None):
+            continue                                   # straight edge between two corners
+        chord = (ex / length, ey / length)
+        ends = []
+        for tan in (ta, tb):
+            if tan is None:
+                ends.append((chord[0] * length, chord[1] * length))
+                continue
+            sign = -1.0 if tan[0] * ex + tan[1] * ey < 0 else 1.0
+            mag = min(length, 1.5 * tan[2])
+            ends.append((sign * tan[0] * mag, sign * tan[1] * mag))
+        (m0x, m0y), (m1x, m1y) = ends
+        steps = max(2, int(math.ceil(length / SMOOTH_STEP)))
+        for j in range(1, steps):
+            u = j / steps
+            h00, h10 = 2 * u ** 3 - 3 * u ** 2 + 1, u ** 3 - 2 * u ** 2 + u
+            h01, h11 = -2 * u ** 3 + 3 * u ** 2, u ** 3 - u ** 2
+            out.append((h00 * a[0] + h10 * m0x + h01 * b[0] + h11 * m1x,
+                        h00 * a[1] + h10 * m0y + h01 * b[1] + h11 * m1y))
+    if not closed:
+        out.append(poly[-1])
+    return out
+
+
+def smooth_line(line):
+    """Smooth an open polyline (a panel line) on its own."""
+    return smooth_path(line, vertex_tangents([line], closed=False), closed=False)
+
+
+def finish(layers):
+    """Smooth every traced (Px) polygon in the layers consistently and convert it to mm."""
+    polys = {}
+    for l in layers:
+        for poly in [l["outline"]] + l["holes"]:
+            if isinstance(poly, Px):
+                polys[id(poly)] = poly
+    tangents = vertex_tangents(list(polys.values()))
+    done = {k: mm(smooth_path(poly, tangents)) for k, poly in polys.items()}
+    for l in layers:
+        l["outline"] = done.get(id(l["outline"]), l["outline"])
+        l["holes"] = [done.get(id(h), h) for h in l["holes"]]
+    return layers
 
 
 def arc(cx, cy, r, a0, a1, n=12):
@@ -128,8 +231,12 @@ def clip_half(poly, a, b, keep):
 def groove(line, outline_px):
     """Groove polygon along a px polyline, trimmed flush where it runs off the silhouette."""
     poly = stroke(line)
-    for end, nxt in ((line[0], line[1]), (line[-1], line[-2])):
+    for pts in (line, line[::-1]):
+        end = pts[0]
         if inside(end, outline_px):
+            continue
+        nxt = next((q for q in pts if inside(q, outline_px)), None)   # first point inside
+        if nxt is None:
             continue
         # outline segment crossed between the last inside point and the end
         for a, b in zip(outline_px, outline_px[1:] + outline_px[:1]):
@@ -227,7 +334,7 @@ def spec():
 
     # keyring tab as on the reference models, hole at 53% of the height
     top = min(y for _, y in SILHOUETTE)
-    tab, tab_hole, tab_fillets = keyring_tab_ref((42.5 - CX) * S, 0.53 * (BOT - top) * S, outline)
+    tab, tab_hole, tab_fillets = keyring_tab_ref((42.5 - CX) * S, 0.53 * (BOT - top) * S, mm(outline))
 
     # hood stops at the upper edge of the shut-line groove
     hood = sym(SILHOUETTE[-1:-8:-1] + [(58.5, 186)] + HL_TOP + [(x, y - GROOVE_W / 2) for x, y in SHUT_LINE])
@@ -281,8 +388,10 @@ def spec():
     valance = sym([(318, 386.5), (290, 384.5), (250, 383)] + swoop + lip_top)
     intake = sym([(318, 386.5), (290, 384.5), (250, 383), (200, 384.5), (192, 387.5), (187.5, 391),
                   (189, 394.5), (195, 397.5), (212, 397.5), (250, 398), (318, 398.5)])
-    wing_l, wing_r = pair([(150, 404.3), (115, 404.5), (80, 405), (66, 405.3), (70, 405.8), (80, 408),
-                           (158, 408), (166, 405), (160, 404.4)])
+    wing_top = [(160, 404.4), (150, 404.3), (115, 404.5), (80, 405), (66, 405.3)]
+    wing_l, wing_r = pair(wing_top + [(70, 405.8), (80, 408), (158, 408), (166, 405)])
+    # the blue body stops at the top of the wings (its own outline, so nothing has to be cut)
+    body_outline = sym(SILHOUETTE[:2] + wing_top + SILHOUETTE[5:])
     badge = mm([(318 + 24.5 * math.cos(2 * math.pi * i / 64), 247 + 15 * math.sin(2 * math.pi * i / 64))
                 for i in range(64)])                # 5.6 x 3.4 mm oval
 
@@ -297,6 +406,7 @@ def spec():
         else:
             lines = [(name + " L", line), (name + " R", flip(line)[::-1])]
         for n, ln in lines:
+            ln = smooth_line(ln)
             grooves.append((n, mm(groove(ln, outline_px))))
             gaps.append((n, mm(stroke(ln))))
 
@@ -306,7 +416,7 @@ def spec():
         layer("Backing", "black", 0, BASE_TOP, outline, holes=[eye_l, eye_r]),
         layer("Keyring tab", "black", 0, SURFACE, tab, holes=[tab_hole]),
         *[layer("Keyring tab fillet", "black", 0, BASE_TOP, f) for f in tab_fillets],
-        layer("Body", "body_blue", BASE_TOP, SURFACE, outline, holes=pockets),
+        layer("Body", "body_blue", BASE_TOP, SURFACE, body_outline, holes=pockets),
         layer("Hood", "body_blue", BASE_TOP, 3.2, hood),
         layer("Bumper lip over grille", "body_blue", BASE_TOP, 3.2, lip),
         layer("Chin", "body_blue", BASE_TOP, 3.4, chin),
@@ -334,10 +444,8 @@ def spec():
         *[layer(f"Panel line {n} (gap)", "void", 2.5, 4.0, g) for n, g in gaps],
         *[layer("Mesh cell", "void", 0, 4.0, m) for m in mesh],
         layer("Space over valance", "void", 2.6, 4.0, valance),
-        layer("Space over valance wing L", "void", 2.6, 4.0, wing_l),
-        layer("Space over valance wing R", "void", 2.6, 4.0, wing_r),
         layer("Lower intake", "void", 2.0, 4.0, intake),
     ]
     colors = {"black": [0.02, 0.02, 0.02], "body_blue": [0.2, 0.36, 0.55],
               "white": [0.961, 0.961, 0.961], "orange": [0.867, 0.486, 0.059]}
-    return {"name": "mazda3_2012", "colors": colors, "layers": layers}
+    return {"name": "mazda3_2012", "colors": colors, "layers": finish(layers)}
