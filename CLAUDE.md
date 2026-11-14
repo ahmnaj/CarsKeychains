@@ -110,8 +110,8 @@ rules come from that review; follow them from the first version.
   floor at 2.5 plus a void above. Run each one right through to the silhouette edge or
   into the part it meets, so the body-color part splits into separate pieces along it; a
   groove that stops short or sits under a raised layer reads as a stroke drawn on top.
-  Only real seams get a groove. A fold in a surface (light/dark boundary, no gap) is a
-  0.2 mm height step instead. Do not add lines the car does not have.
+  A soft fold in a surface (gradual light/dark change) is a 0.2 mm height step instead;
+  sharp creases are grooves (see below). Do not add lines the car does not have.
 - Grooves get their own study (the owner sent the Epiq back for this). First list every
   seam with `tools/seam_map.py` over the whole face; do not rely on the plain photo, where
   seams on bright or dark paint are invisible. Then take each line's points from the darkest
@@ -123,6 +123,14 @@ rules come from that review; follow them from the first version.
   silhouette, empty its end cap (`groove` in the Epiq car.py returns it) or a body-color
   crumb is left at the edge. Save a picture of the grooves over the photo as
   `out/grooves.png` for the hand-over.
+- Sharp creases count as grooves for the owner, not only panel gaps (second Epiq review:
+  the crease between the headlight tips, the one under the light strips, the hood centre
+  creases, the bumper corner edges). A crease has no dark line: find it as the row/column
+  of steepest brightness change, measure it on both sides of the car and keep it only if the
+  two sides agree (reflections do not mirror, real creases do); where one side is washed
+  out, use the other. Each crease still has to end in the silhouette or in another part
+  (headlight, grille, black trim, another groove). Only soft shading stays a 0.2 mm step
+  or is left out.
 - Black areas must not be flat. Give grilles and valances their real structure with
   0.4 to 1 mm steps (slot, panel, mesh, intake) and make meshes see-through: for a
   honeycomb grille, wide flat hexagon cells about 2.5 x 0.9 mm with 0.4 mm webs, rows

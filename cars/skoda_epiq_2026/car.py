@@ -11,7 +11,8 @@ The painted body is its own part ("body_black") so it can get its own black fila
 unpainted trim (Tech-Deck face, band between the headlights, grille, splitter) belongs to
 the black base part. Panel lines (hood shut line, hood-fender lines, fender-bumper
 seams, the crease across the lower bumper, the bumper-lip seams, the joints in the grille
-frame and the seam between light strip and gloss panel) are 0.40 mm grooves. The SKODA lettering is left as a blank badge (0.3 below the hood).
+frame and the seam between light strip and gloss panel) are 0.40 mm grooves. So are the sharp
+creases: hood centre, under the light strips, bumper corners, and headlight tip to tip. The SKODA lettering is left as a blank badge (0.3 below the hood).
 """
 import math
 import sys
@@ -273,14 +274,29 @@ LIP_SEAM = [(211, 1248), (215, 1254), (222, 1258), (228, 1260), (234, 1262), (24
             (303, 1276.5)]
 FRAME_JOINT = [(500, 1128), (500, 1188)]          # joint in the grille frame
 LAMP_SEAM = [(451, 935), (420, 964)]                  # light strip unit to gloss panel
+# creases: sharp folds in the bodywork that read as lines on the car (the owner wants these
+# as grooves too). Each is measured on both sides of the car, which agree within 1 to 2 px.
+HOOD_CREASE = [(670, 808), (675.3, 824), (679, 834), (681.5, 842), (683.5, 850), (687, 858),
+               (689, 866), (691, 874), (694, 882), (696.5, 890), (699, 898), (701.5, 906),
+               (704.5, 916), (706, 921.5)]                # edge of the raised hood centre
+UNDER_STRIP = [(204, 916.5), (215, 920), (230, 924), (245, 928.5), (260, 931.5), (275, 936.5),
+               (290, 940.5), (305, 943.5), (320, 947.5), (335, 953.5), (350, 959.5), (365, 965),
+               (380, 971), (395, 976.5), (410, 982), (425, 987.5), (440, 994), (452, 997),
+               (464, 998)]                                # under the light strip, Tech-Deck end to end
+CORNER_EDGE = [(203.5, 909), (202, 922), (201, 940), (201, 984), (200, 992), (198.5, 1030),
+               (198, 1064)]                               # bumper corner: Tech-Deck end to air curtain
+BAR_CREASE = [(426, 1025), (450, 1023), (480, 1024.5), (510, 1028.5), (540, 1030), (600, 1030),
+              (700, 1031), (CX, 1032.5)]                  # from headlight tip to headlight tip
+# raised centre of the hood (a fold, 0.2 mm step)
+DOME_EDGE = [(675.3, TOP)] + HOOD_CREASE[2:-1]
+
 # (line, depth of its floor, runs across the centre)
 LINES = {"hood shut line": (SHUT, 2.5, True), "hood-fender line": (HOOD_FENDER, 2.5, False),
          "fender-bumper seam": (FENDER_BUMPER, 2.5, False), "lower bumper crease": (CREASE, 2.5, True),
          "bumper-lip seam": (LIP_SEAM, 2.5, False), "grille frame joint": (FRAME_JOINT, 2.5, False),
-         "light strip seam": (LAMP_SEAM, 2.0, False)}
-
-# raised centre of the hood (a fold, 0.2 mm step)
-DOME_EDGE = [(674, TOP), (680, 840), (686, 855), (692, 870), (696, 888), (700, 905), (703, 916)]
+         "light strip seam": (LAMP_SEAM, 2.0, False),
+         "hood centre crease": (HOOD_CREASE, 2.5, False), "crease under light strip": (UNDER_STRIP, 2.5, False),
+         "bumper corner edge": (CORNER_EDGE, 2.5, False), "bumper bar crease": (BAR_CREASE, 2.5, True)}
 
 # Tech-Deck face: gloss black panel under the hood carrying the light strips
 TD_END = [(208.5, 871), (207, 884), (204.5, 898), (203.5, 910), (205, 916), (208.5, 918.5)]
