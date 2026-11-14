@@ -139,6 +139,55 @@ def groove(line, outline_px):
     return poly
 
 
+def interp(pts, x):
+    """Piecewise-linear y(x) through px points sorted by x (clamped at the ends)."""
+    if x <= pts[0][0]:
+        return pts[0][1]
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        if x <= x1:
+            return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+    return pts[-1][1]
+
+
+# lower edge of the smooth grille panel (slight V in the middle) and of the grille itself
+PANEL_BOTTOM = [(148, 307.5), (160, 313.5), (175, 319.5), (200, 328), (220, 333.5), (258, 336),
+                (295, 337), (318, 339)]
+MESH_BOTTOM = CREASE + [(176, 358)] + GRILLE_BOTTOM
+
+
+# gentle smile the slats follow: the grille's lower edge, carried on out to the sides
+SLAT_CURVE = [(130, 349.5)] + GRILLE_BOTTOM
+
+
+def mesh_slits(pitch=9.5, gap=5.0, wave=1.5, period=24.0):
+    """Wavy horizontal slats of the grille mesh, as see-through gaps between them.
+
+    Rows are parallel smile curves, 0.57 mm gaps and 0.51 mm slats, filling the mesh
+    around the smooth panel; solid ribs stay at the centre and at the two radiator
+    supports. Returns mm polygons (left and right).
+    """
+    ribs = [(218, 4.0), (CX, 4.5)]
+    out = []
+    for k in range(9):
+        run = []
+        for i in range(int((CX - 138) / 1.5) + 2):
+            x = 138 + 1.5 * i
+            yc = interp(SLAT_CURVE, x) - 10.0 - k * pitch + wave * math.sin(2 * math.pi * x / period)
+            top, bot = yc - gap / 2, yc + gap / 2
+            ok = (x <= CX
+                  and bot <= min(interp(MESH_BOTTOM, x), interp(MESH_BOTTOM, x - 5)) - 4.5   # grille edge
+                  and top >= (interp(PANEL_BOTTOM, x) + 3.5 if x >= 148 else 312)             # panel
+                  and all(abs(x - rx) > rw for rx, rw in ribs))
+            if ok:
+                run.append((x, yc))
+            elif run:
+                if run[-1][0] - run[0][0] >= 12:
+                    poly = [(px, py - gap / 2) for px, py in run] + [(px, py + gap / 2) for px, py in run[::-1]]
+                    out += list(pair(poly))
+                run = []
+    return out
+
+
 def spec():
     outline = sym(SILHOUETTE)
 
@@ -172,10 +221,8 @@ def spec():
     grille_slot = sym([(318, 278.5), (270, 277.5), (195, 276), (146, 274), (142, 276), (141.5, 282),
                        (143, 287.5), (200, 288.5), (318, 290)])
     grille_panel = sym([(318, 290), (200, 288.5), (143, 287.5), (144, 298), (148, 307.5), (160, 313.5),
-                        (175, 319.5), (200, 328), (220, 333.5), (258, 336), (318, 337)])
-    fins = []                                            # see-through slits between the fins
-    for x0, x1, y0, y1 in ((234, 311, 343, 349.5), (234, 311, 354.5, 361), (270, 311, 365.5, 370.5)):
-        fins += list(pair([(x0, y0), (x1, y0), (x1, y1), (x0, y1)]))
+                        *PANEL_BOTTOM[2:]])
+    mesh = mesh_slits()                                  # see-through gaps between the wavy slats
     lip = sym([(318, 270), (200, 267.5), (146, 266), (140, 268), (140, 272.5)] + GRILLE_TOP[::-1])
     chin = sym(GRILLE_BOTTOM[::-1] + [(177, 361.5)] + FOG_BOTTOM + [(57, 368)] + CHIN_BOTTOM[::-1])
     # lower bumper is body color; black corner slots (chrome-edged) and a slim centre intake
@@ -231,7 +278,7 @@ def spec():
         layer("Indicator L", "orange", 2.5, SURFACE, amber_l),
         layer("Indicator R", "orange", 2.5, SURFACE, amber_r),
         *[layer(f"Panel line {n} (gap)", "void", 2.5, 4.0, g) for n, g in gaps],
-        *[layer("Radiator fin slit", "void", 0, 4.0, f) for f in fins],
+        *[layer("Grille mesh gap", "void", 0, 4.0, m) for m in mesh],
     ]
     colors = {"black": [0.02, 0.02, 0.02], "body_blue": [0.2, 0.36, 0.55],
               "white": [0.961, 0.961, 0.961], "orange": [0.867, 0.486, 0.059]}
