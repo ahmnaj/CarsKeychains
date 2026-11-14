@@ -273,15 +273,16 @@ def spec():
                (130, 396.5), (100, 395.5), (80, 394.5), (74, 393), (70, 389), (66.5, 382)]
     slot_l, slot_r = pair(slot_px)
     # under the chin (straight-on photo, brightened): the blue edge swoops up from the
-    # bumper corners to the chin, a dark valance sits behind it with wings that hang below
-    # the corners, the intake is the deepest part, and a blue lip runs along the bottom
-    swoop = [(200, 384.5), (192, 387.5), (185, 390.7), (175, 397), (165, 402)]
-    valance = sym([(318, 386.5), (290, 384.5), (250, 383)] + swoop +
-                  [(150, 404.3), (115, 404.5), (80, 405), (66, 405.3), (70, 405.8), (80, 408),
-                   (158, 408), (166, 405), (318, 405)])
-    intake = sym([(318, 386.5), (290, 384.5), (250, 383), (200, 384.5), (192, 387.5), (186, 391.5),
-                  (190, 395), (200, 396), (250, 396.5), (318, 397)])
-    lower_lip = sym([(318, 398.5), (250, 398), (212, 397.5), (204, 400), (208, 405), (318, 405)])
+    # bumper corners to the chin and carries on along the bottom as a lip, so the dark
+    # valance and intake between them are enclosed by blue; thin black valance wings hang
+    # below the bumper corners
+    swoop = [(200, 384.5), (192, 387.5), (185, 390.7), (177, 396)]
+    lip_top = [(190, 397.5), (212, 397.5), (250, 398), (318, 398.5)]
+    valance = sym([(318, 386.5), (290, 384.5), (250, 383)] + swoop + lip_top)
+    intake = sym([(318, 386.5), (290, 384.5), (250, 383), (200, 384.5), (192, 387.5), (187.5, 391),
+                  (189, 394.5), (195, 397.5), (212, 397.5), (250, 398), (318, 398.5)])
+    wing_l, wing_r = pair([(150, 404.3), (115, 404.5), (80, 405), (66, 405.3), (70, 405.8), (80, 408),
+                           (158, 408), (166, 405), (160, 404.4)])
     badge = mm([(318 + 24.5 * math.cos(2 * math.pi * i / 64), 247 + 15 * math.sin(2 * math.pi * i / 64))
                 for i in range(64)])                # 5.6 x 3.4 mm oval
 
@@ -320,6 +321,8 @@ def spec():
         layer("Lower corner slot L", "black", 0, 2.0, slot_l),
         layer("Lower corner slot R", "black", 0, 2.0, slot_r),
         layer("Lower valance", "black", 0, 2.6, valance),
+        layer("Valance wing L", "black", 0, 2.6, wing_l),
+        layer("Valance wing R", "black", 0, 2.6, wing_r),
         *[layer(f"Panel line {n}", "black", 0, 2.5, g) for n, g in grooves],
         layer("Blank logo badge", "black", 0, SURFACE - BADGE_RECESS, badge),
         layer("Projector ring L", "white", 2.5, SURFACE, ring_l, holes=[eye_l]),
@@ -331,8 +334,9 @@ def spec():
         *[layer(f"Panel line {n} (gap)", "void", 2.5, 4.0, g) for n, g in gaps],
         *[layer("Mesh cell", "void", 0, 4.0, m) for m in mesh],
         layer("Space over valance", "void", 2.6, 4.0, valance),
+        layer("Space over valance wing L", "void", 2.6, 4.0, wing_l),
+        layer("Space over valance wing R", "void", 2.6, 4.0, wing_r),
         layer("Lower intake", "void", 2.0, 4.0, intake),
-        layer("Lower lip", "body_blue", BASE_TOP, SURFACE, lower_lip),
     ]
     colors = {"black": [0.02, 0.02, 0.02], "body_blue": [0.2, 0.36, 0.55],
               "white": [0.961, 0.961, 0.961], "orange": [0.867, 0.486, 0.059]}
