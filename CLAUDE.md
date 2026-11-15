@@ -151,6 +151,9 @@ rules come from that review; follow them from the first version.
   no blank badge for lettering on the hood (left flat), no fender-bumper seam or step in
   the corner above the headlight (left flat), and the headlight lens modules as white
   inlays flush with the glass instead of see-through holes.
+- A black opening must not end in a straight cut where the car's carries on: on the Epiq the
+  air curtain's dark channel runs on up beside the headlight to its top corner. Follow each
+  dark opening in a brightened crop to where it really ends.
 - Only grooves the car has. The Epiq has no hood-fender line (its hood runs out to the
   edge); the owner had it removed. A bright or dark edge at the side of the hood is not
   proof of a seam: look for it in other photos of the car or ask.

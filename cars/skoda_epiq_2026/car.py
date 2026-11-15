@@ -387,6 +387,9 @@ def spec():
     hl_l, hl_r = pair(HEADLIGHT)
     eyes = [p for e in EYES for p in both(e)]
     air_l, air_r = both(AIR_CURTAIN)
+    # the air curtain's dark channel carries on up beside the headlight to its top corner
+    air_up_l, air_up_r = both([(196, 1062), (196, 1040), (198, 1020), (200, 1000), (201.5, 990),
+                               (204, 985.5), (207, 987), (209.5, 994), (209.5, 1062)])
 
     band = sym(BAND_TOP + BAND_END + ARC1)
     frame = sym([(CX, 1134)] + ARC1[-2::-1] + ARC2)
@@ -488,6 +491,8 @@ def spec():
         *[layer("Grille fin", "black", 0, 2.6, f) for f in fins],
         *sunk("Air curtain L", 2.0, air_l),
         *sunk("Air curtain R", 2.0, air_r),
+        *sunk("Air curtain beside headlight L", 2.0, air_up_l),
+        *sunk("Air curtain beside headlight R", 2.0, air_up_r),
         layer("Grille rail", "black", 0, 2.6, rail),
         *sunk("Lower valance", 2.8, valance),
         layer("Valance slot", "void", 2.0, 4.0, slot),
