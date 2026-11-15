@@ -154,6 +154,8 @@ rules come from that review; follow them from the first version.
 - A black opening must not end in a straight cut where the car's carries on: on the Epiq the
   air curtain's dark channel runs on up beside the headlight to its top corner. Follow each
   dark opening in a brightened crop to where it really ends.
+- Free-standing fins and bars between see-through slots: at least 0.6 mm wide (0.42 mm on
+  the Epiq was too fragile for the owner); slots between them can go down to about 0.55.
 - Only grooves the car has. The Epiq has no hood-fender line (its hood runs out to the
   edge); the owner had it removed. A bright or dark edge at the side of the hood is not
   proof of a seam: look for it in other photos of the car or ask.

@@ -10,7 +10,7 @@ wheels, mirrors and the windscreen are left off as on the other cars.
 The painted body is its own part ("body_black") so it can get its own black filament; the
 unpainted trim (Tech-Deck face, band between the headlights, grille, splitter) belongs to
 the black base part. Panel lines (hood shut line, the crease across the lower bumper, the bumper-lip seams, the joints in the grille
-frame and the seam between light strip and gloss panel) are 0.40 mm grooves. So are the sharp
+frame) are 0.40 mm grooves. So are the sharp
 creases: hood centre, under the light strips, bumper corners, and headlight tip to tip. The hood is left flat where the
 SKODA lettering is (no badge, at the owner's request).
 """
@@ -264,7 +264,6 @@ CREASE = [(146, 1278.5), (160, 1283.5), (173.7, 1288.7), (190, 1295), (210, 1299
           (250, 1306), (270, 1310), (290, 1312.5), (310, 1315), (330, 1318), (370, 1323),
           (410, 1326), (450, 1327.5), (490, 1328.2), (570, 1329), (650, 1329.5), (CX, 1330)]
 FRAME_JOINT = [(500, 1128), (500, 1188)]          # joint in the grille frame
-LAMP_SEAM = [(451, 935), (420, 964)]                  # light strip unit to gloss panel
 # creases: sharp folds in the bodywork that read as lines on the car (the owner wants these
 # as grooves too). Not the bumper corner edge beside the headlight or the edge from the air
 # curtain to the grille frame: those are hard edges of one part, shown as 0.2 mm steps (the
@@ -285,7 +284,6 @@ DOME_EDGE = [(675.3, TOP)] + HOOD_CREASE[2:-1]
 LINES = {"hood shut line": (SHUT, 2.5, True), 
          "lower bumper crease": (CREASE, 2.5, True),
          "grille frame joint": (FRAME_JOINT, 2.5, False),
-         "light strip seam": (LAMP_SEAM, 2.0, False),
          "hood centre crease": (HOOD_CREASE, 2.5, False), "crease under light strip": (UNDER_STRIP, 2.5, False),
          "bumper bar crease": (BAR_CREASE, 2.5, True)}
 
@@ -331,7 +329,7 @@ ARC2 = [(291.5, 1273), (308, 1256), (322, 1240), (347, 1220), (372, 1200), (390,
 GRILLE_BOTTOM = [(300, 1275), (330, 1280), (350, 1282.5), (370, 1286.5), (400, 1290), (425, 1292.5),
                  (434, 1295), (441, 1301), (449, 1308.5), (458, 1312.5), (472, 1315), (500, 1316),
                  (CX, 1317)]
-FIN_PITCH, FIN_W = 24.44, 0.42 / S          # vertical fins, 1.18 mm apart
+FIN_PITCH, FIN_W = 24.44, 0.60 / S          # vertical fins, 1.18 mm apart; 0.6 wide so they print
 SIDE_FINS = [403.5, 380.5, 357, 334.5]      # fins in the closed side parts of the grille
 SLOT_TOP = 1218                             # see-through part between the fins starts here
 RAIL = 9                                    # rail under the fins, px above the grille's lower edge
