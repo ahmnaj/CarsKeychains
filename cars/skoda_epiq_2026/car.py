@@ -426,7 +426,11 @@ def spec():
     # curtains, and the lower lip under the bumper-lip seam and the grille (it runs on under
     # the valance and splitter, which are laid over it afterwards)
     # (the owner wants the corner above the headlight flat: no fender seam, no step there)
-    side_px = [(140, 994), (199, 994), (198, 1058), (196, 1100),
+    # its top sweeps up from the headlight's corner into the side of the car, and it runs
+    # right up to the headlight's edge (the owner did not want a straight cut there)
+    sweep = [((1 - t) ** 2 * 160 + 2 * t * (1 - t) * 164 + t * t * 209,
+              (1 - t) ** 2 * 936 + 2 * t * (1 - t) * 978 + t * t * 994) for t in [i / 12 for i in range(13)]]
+    side_px = [(140, 936)] + sweep + [(209, 1060), (197, 1060), (196, 1100),
                (198, 1200), (203, 1240), (207, 1250), (140, 1250)]
     lower = sym([(CX, 1314)] + [(x, y - 3) for x, y in GRILLE_BOTTOM[-2::-1]] +
                 [(291.5, 1274.3), (262, 1269.5), (240, 1265), (225, 1259.5), (213, 1253),
